@@ -1,0 +1,68 @@
+PASS  win: 3 pts winner, 0 loser
+PASS  draw: 1 pt each
+PASS  loss: home 0, away 3
+PASS  negative score rejected
+PASS  fixture stays SCHEDULED after bad score
+PASS  direct MatchResult rejects negative
+PASS  second result rejected
+PASS  points not awarded twice
+PASS  complete(null) rejected
+PASS  unknown fixture rejected
+PASS  pending team cannot be scheduled
+PASS  suspended team cannot be scheduled
+PASS  duplicate team ID rejected
+PASS  standings lists winner with 3 pts
+PASS  fixtures report shows result
+PASS  sales report has totals
+PASS  reload: teams
+PASS  reload: stadium
+PASS  reload: fixture links by ID
+PASS  reload: result
+PASS  reload: standings identical
+PASS  reload: commissioner
+
+22 passed, 0 failed
+PASS  player and coach added to squad
+PASS  underage player rejected
+PASS  duplicate jersey rejected
+PASS  duplicate person ID rejected
+PASS  player removed
+PASS  polymorphic role
+PASS  same team double-booked rejected
+PASS  same stadium double-booked rejected
+PASS  team may play at another time
+PASS  fixture with same team twice rejected
+PASS  invalid stadium capacity rejected
+PASS  negative ticket price rejected
+PASS  official assigned
+PASS  official double-booked rejected
+PASS  unavailable official rejected
+PASS  cannot assign to completed fixture
+PASS  decisions logged (3 approvals + assignment + note)
+PASS  note for unknown fixture rejected
+PASS  VIP costs double the base price
+PASS  third ticket rejected at capacity 2
+PASS  exactly 2 tickets sold
+PASS  cancelling frees a seat
+PASS  sales provider reports tickets
+PASS  insufficient payment rejected
+PASS  stock unchanged after failed sale
+PASS  negative quantity rejected
+PASS  zero quantity rejected
+PASS  exhausted stock rejected
+PASS  stock reduced after valid sale
+PASS  product subclass override via Product reference
+PASS  negative stock rejected
+PASS  total J$1,150 -> pre-tax 1000 and GCT 150
+PASS  change = payment - total
+PASS  receipt text prints GCT line
+PASS  reload: players and coaches
+PASS  reload: officials and assignments
+PASS  reload: commissioner decisions
+PASS  reload: tickets per fixture
+PASS  reload: shop stock and sales
+PASS  reload: shop revenue
+PASS  reload: sales report identical
+PASS  reload: standings report identical
+
+42 passed, 0 failed
