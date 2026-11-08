@@ -14,116 +14,219 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Central league class. Holds teams, stadiums, fixtures and results, and calculates standings.
- * It works through the integration interfaces and does not contain team/stadium/fixture logic.
+ * The central class of the league.
+ *
+ * It keeps lists of teams, stadiums, fixtures and match results, lets us search them,
+ * records results, and works out the league table (standings).
+ *
+ * It does NOT contain team/stadium/fixture logic. That belongs to Members 2 and 3.
+ * It only talks to their classes through the small interfaces in kpfl.integration.
  */
 public class FootballLeague {
+
+    // Each Map is "ID -> object", so looking something up by ID is quick.
+    // LinkedHashMap keeps items in the order they were added.
     private final Map<String, TeamInfo> teams = new LinkedHashMap<>();
     private final Map<String, StadiumInfo> stadiums = new LinkedHashMap<>();
     private final Map<String, FixtureInfo> fixtures = new LinkedHashMap<>();
+
+    // fixture ID -> its result. A fixture can only have ONE entry here,
+    // which is how we stop points being awarded twice.
     private final Map<String, MatchResult> results = new LinkedHashMap<>();
 
+    // ------------------------------------------------------------------
+    // Registering things
+    // ------------------------------------------------------------------
+
+    /** Adds a team to the league. Rejects missing teams and duplicate IDs or names. */
     public void registerTeam(TeamInfo team) {
-        require(team != null, "Team is required.");
-        require(!teams.containsKey(team.getTeamId()), "Team id already registered: " + team.getTeamId());
-        require(findTeamByName(team.getTeamName()) == null, "Team name already registered: " + team.getTeamName());
+        check(team != null, "Team is required.");
+        check(!teams.containsKey(team.getTeamId()), "Team id already registered: " + team.getTeamId());
+        check(findTeamByName(team.getTeamName()) == null, "Team name already registered: " + team.getTeamName());
         teams.put(team.getTeamId(), team);
     }
 
+    /** Adds a stadium to the league. Rejects missing stadiums and duplicate IDs. */
     public void addStadium(StadiumInfo stadium) {
-        require(stadium != null, "Stadium is required.");
-        require(!stadiums.containsKey(stadium.getStadiumId()), "Stadium id already added: " + stadium.getStadiumId());
+        check(stadium != null, "Stadium is required.");
+        check(!stadiums.containsKey(stadium.getStadiumId()), "Stadium id already added: " + stadium.getStadiumId());
         stadiums.put(stadium.getStadiumId(), stadium);
     }
 
+    /**
+     * Adds a fixture to the league.
+     * Both teams and the stadium must already be registered.
+     * (Scheduling-conflict checks are Member 3's job, not ours.)
+     */
     public void addFixture(FixtureInfo fixture) {
-        require(fixture != null, "Fixture is required.");
-        require(!fixtures.containsKey(fixture.getFixtureId()), "Fixture id already added: " + fixture.getFixtureId());
-        require(teams.containsKey(fixture.getHomeTeamId()), "Home team is not registered: " + fixture.getHomeTeamId());
-        require(teams.containsKey(fixture.getAwayTeamId()), "Away team is not registered: " + fixture.getAwayTeamId());
-        require(!fixture.getHomeTeamId().equals(fixture.getAwayTeamId()), "A team cannot play itself.");
-        require(stadiums.containsKey(fixture.getStadiumId()), "Stadium is not added: " + fixture.getStadiumId());
+        check(fixture != null, "Fixture is required.");
+        check(!fixtures.containsKey(fixture.getFixtureId()), "Fixture id already added: " + fixture.getFixtureId());
+        check(teams.containsKey(fixture.getHomeTeamId()), "Home team is not registered: " + fixture.getHomeTeamId());
+        check(teams.containsKey(fixture.getAwayTeamId()), "Away team is not registered: " + fixture.getAwayTeamId());
+        check(!fixture.getHomeTeamId().equals(fixture.getAwayTeamId()), "A team cannot play itself.");
+        check(stadiums.containsKey(fixture.getStadiumId()), "Stadium is not added: " + fixture.getStadiumId());
         fixtures.put(fixture.getFixtureId(), fixture);
     }
 
+    // ------------------------------------------------------------------
+    // Searching
+    // ------------------------------------------------------------------
+
+    /** Finds a team by ID. Returns null if there is no such team. */
     public TeamInfo findTeamById(String id) {
         return teams.get(id);
     }
 
-    /** Case-insensitive name search; null if not found. */
+    /** Finds a team by name, ignoring upper/lower case. Returns null if not found. */
     public TeamInfo findTeamByName(String name) {
-        if (name == null) return null;
+        if (name == null) {
+            return null;
+        }
+        // Look through every team until the name matches.
         for (TeamInfo team : teams.values()) {
-            if (team.getTeamName().equalsIgnoreCase(name.trim())) return team;
+            if (team.getTeamName().equalsIgnoreCase(name.trim())) {
+                return team;
+            }
         }
         return null;
     }
 
+    /** Finds a stadium by ID. Returns null if not found. */
     public StadiumInfo findStadiumById(String id) {
         return stadiums.get(id);
     }
 
+    /** Finds a fixture by ID. Returns null if not found. */
     public FixtureInfo findFixtureById(String id) {
         return fixtures.get(id);
     }
 
-    public Collection<TeamInfo> getTeams() { return Collections.unmodifiableCollection(teams.values()); }
-    public Collection<StadiumInfo> getStadiums() { return Collections.unmodifiableCollection(stadiums.values()); }
-    public Collection<FixtureInfo> getFixtures() { return Collections.unmodifiableCollection(fixtures.values()); }
-    public Collection<MatchResult> getResults() { return Collections.unmodifiableCollection(results.values()); }
-
+    /** Finds the result for a fixture. Returns null if the match has no result yet. */
     public MatchResult findResult(String fixtureId) {
         return results.get(fixtureId);
     }
 
+    // ------------------------------------------------------------------
+    // Getting the whole lists
+    // The "unmodifiable" wrapper stops other classes from adding/removing items by accident.
+    // ------------------------------------------------------------------
+
+    public Collection<TeamInfo> getTeams() {
+        return Collections.unmodifiableCollection(teams.values());
+    }
+
+    public Collection<StadiumInfo> getStadiums() {
+        return Collections.unmodifiableCollection(stadiums.values());
+    }
+
+    public Collection<FixtureInfo> getFixtures() {
+        return Collections.unmodifiableCollection(fixtures.values());
+    }
+
+    public Collection<MatchResult> getResults() {
+        return Collections.unmodifiableCollection(results.values());
+    }
+
+    // ------------------------------------------------------------------
+    // Recording results
+    // ------------------------------------------------------------------
+
     /**
-     * Records the score for a fixture and marks the fixture completed.
-     * A fixture can only ever receive one result, so points are never awarded twice.
+     * Records the score of a fixture and marks the fixture as completed.
+     *
+     * Steps:
+     *   1. the fixture must exist
+     *   2. it must not already have a result (so points are never given twice)
+     *   3. build the MatchResult (this throws if a score is negative)
+     *   4. only AFTER the result is valid do we store it and mark the fixture completed
      */
     public MatchResult recordResult(String fixtureId, int homeScore, int awayScore) {
         FixtureInfo fixture = fixtures.get(fixtureId);
-        require(fixture != null, "No such fixture: " + fixtureId);
-        require(!results.containsKey(fixtureId) && !fixture.isCompleted(),
+
+        check(fixture != null, "No such fixture: " + fixtureId);
+        check(!results.containsKey(fixtureId) && !fixture.isCompleted(),
                 "Fixture " + fixtureId + " already has a result.");
+
+        // If the scores are bad, this line throws and nothing below runs.
         MatchResult result = new MatchResult(fixtureId, fixture.getHomeTeamId(), fixture.getAwayTeamId(),
                 homeScore, awayScore, fixture.getDateTime().toLocalDate());
+
         results.put(fixtureId, result);
         fixture.markCompleted();
         return result;
     }
 
     /**
-     * Re-adds a result loaded from file. The fixture itself is restored by Member 3's storage,
-     * so it is not required to exist yet. Duplicates are rejected.
+     * Puts a result that was loaded from a file back into the league.
+     * The fixture does not have to exist yet, because Member 3's own storage restores fixtures.
+     * A second result for the same fixture is still rejected.
      */
     public void restoreResult(MatchResult result) {
-        require(result != null, "Result is required.");
-        require(!results.containsKey(result.getFixtureId()),
+        check(result != null, "Result is required.");
+        check(!results.containsKey(result.getFixtureId()),
                 "Fixture " + result.getFixtureId() + " already has a result.");
         results.put(result.getFixtureId(), result);
     }
 
-    /** Builds the table from recorded results; sorted by points, goal difference, goals scored, then name. */
+    // ------------------------------------------------------------------
+    // Standings
+    // ------------------------------------------------------------------
+
+    /**
+     * Builds the league table from the stored results.
+     * It is worked out fresh each time, so it always matches the real data.
+     *
+     * Order: most points first. If tied, better goal difference, then more goals scored,
+     * then team name (A to Z) so the order is always the same.
+     */
     public List<StandingsEntry> calculateStandings() {
+
+        // Step 1: give every registered team an empty row (so teams with no matches still appear).
         Map<String, StandingsEntry> table = new LinkedHashMap<>();
         for (TeamInfo team : teams.values()) {
             table.put(team.getTeamId(), new StandingsEntry(team.getTeamId(), team.getTeamName()));
         }
-        for (MatchResult r : results.values()) {
-            StandingsEntry home = table.get(r.getHomeTeamId());
-            StandingsEntry away = table.get(r.getAwayTeamId());
-            if (home != null) home.addMatch(r.getHomeScore(), r.getAwayScore(), r.getHomePoints());
-            if (away != null) away.addMatch(r.getAwayScore(), r.getHomeScore(), r.getAwayPoints());
+
+        // Step 2: add every result to both teams' rows.
+        for (MatchResult result : results.values()) {
+            StandingsEntry homeRow = table.get(result.getHomeTeamId());
+            StandingsEntry awayRow = table.get(result.getAwayTeamId());
+
+            // A row can be missing if the team is not registered, so check for null first.
+            if (homeRow != null) {
+                homeRow.addMatch(result.getHomeScore(), result.getAwayScore(), result.getHomePoints());
+            }
+            if (awayRow != null) {
+                awayRow.addMatch(result.getAwayScore(), result.getHomeScore(), result.getAwayPoints());
+            }
         }
-        List<StandingsEntry> sorted = new ArrayList<>(table.values());
-        sorted.sort(Comparator.comparingInt(StandingsEntry::getPoints).reversed()
-                .thenComparing(Comparator.comparingInt(StandingsEntry::getGoalDifference).reversed())
-                .thenComparing(Comparator.comparingInt(StandingsEntry::getGoalsFor).reversed())
-                .thenComparing(StandingsEntry::getTeamName));
-        return sorted;
+
+        // Step 3: sort the rows into table order.
+        List<StandingsEntry> rows = new ArrayList<>(table.values());
+        Collections.sort(rows, new Comparator<StandingsEntry>() {
+            @Override
+            public int compare(StandingsEntry a, StandingsEntry b) {
+                // Compare b to a so that BIGGER numbers come first.
+                if (a.getPoints() != b.getPoints()) {
+                    return Integer.compare(b.getPoints(), a.getPoints());
+                }
+                if (a.getGoalDifference() != b.getGoalDifference()) {
+                    return Integer.compare(b.getGoalDifference(), a.getGoalDifference());
+                }
+                if (a.getGoalsFor() != b.getGoalsFor()) {
+                    return Integer.compare(b.getGoalsFor(), a.getGoalsFor());
+                }
+                // Still tied: sort by name A to Z.
+                return a.getTeamName().compareTo(b.getTeamName());
+            }
+        });
+        return rows;
     }
 
-    private static void require(boolean condition, String message) {
-        if (!condition) throw new LeagueException(message);
+    // Small helper: throws our exception with the message if the condition is false.
+    private void check(boolean condition, String message) {
+        if (!condition) {
+            throw new LeagueException(message);
+        }
     }
 }
