@@ -46,6 +46,7 @@ public class Main {
 
     private void run() {
         System.out.println("=== Kingston Premier Football League (KPFL) ===");
+        // Continue from saved data when it exists; otherwise start a fresh league.
         if (storage.hasSavedData()) {
             attempt(() -> {
                 app = storage.load();
@@ -56,6 +57,7 @@ public class Main {
         }
 
         while (running) {
+            // Each menu action calls a service, which applies the business rules.
             System.out.println();
             System.out.println("MAIN MENU");
             System.out.println("1  Teams, players & coaches");
@@ -107,6 +109,7 @@ public class Main {
     }
 
     private void teamsMenu() {
+        // The labels and actions line up by index in subMenu().
         subMenu("Teams, players & coaches",
                 new String[] {"Register team", "Approve team", "Suspend team", "List / search teams",
                         "Add player", "Remove player", "Add coach", "Show a team's squad"},
@@ -309,6 +312,7 @@ public class Main {
     private void shopSale() {
         Map<String, Integer> basket = new LinkedHashMap<>();
         System.out.println("Enter items; leave product ID blank to finish.");
+        // merge() adds quantities if the user enters the same product more than once.
         while (true) {
             String id = prompt("Product ID");
             if (id.isEmpty()) break;
@@ -361,6 +365,7 @@ public class Main {
     private void attempt(Runnable action) {
         try {
             action.run();
+        // Expected validation errors become short messages so the menu keeps running.
         } catch (ValidationException e) {
             System.out.println("Error: " + e.getMessage());
         } catch (RuntimeException e) {

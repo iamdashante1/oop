@@ -25,6 +25,7 @@ public class ReportService {
         sb.append("=== KPFL LEAGUE STANDINGS ===\n");
         sb.append(String.format("%-3s %-24s %3s %3s %3s %3s %4s %4s %4s %4s%n",
                 "#", "Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts"));
+        // FootballLeague calculates and sorts the rows; this class only prints them.
         List<StandingsEntry> rows = league.getStandings();
         if (rows.isEmpty()) sb.append("(no approved teams yet)\n");
         int pos = 1;
@@ -38,6 +39,7 @@ public class ReportService {
 
     public String fixturesReport() {
         StringBuilder sb = new StringBuilder("=== KPFL FIXTURES ===\n");
+        // Show matches in two groups based on whether a result has been recorded.
         appendFixtures(sb, "Upcoming", league.getFixtures(Fixture.Status.SCHEDULED));
         appendFixtures(sb, "Completed", league.getFixtures(Fixture.Status.COMPLETED));
         return sb.toString();
@@ -67,6 +69,7 @@ public class ReportService {
         sb.append(String.format("%-6s %-34s %8s %8s %12s%n", "Fix", "Match", "Sold", "Cap", "Revenue"));
         int totalTickets = 0;
         double ticketTotal = 0;
+        // Gather ticket sales for each fixture, then add shop revenue below.
         for (Fixture f : league.getFixtures()) {
             int sold = sales.ticketsSold(f.getFixtureId());
             double revenue = sales.ticketRevenue(f.getFixtureId());
@@ -78,6 +81,7 @@ public class ReportService {
         }
         double shop = sales.shopRevenue();
         double grand = ticketTotal + shop;
+        // All revenue already includes GCT, so display the tax portion separately.
         sb.append("-----\n");
         sb.append(String.format("Tickets sold: %d   Ticket revenue: %s%n", totalTickets, money(ticketTotal)));
         sb.append(String.format("Shop transactions: %d   Shop revenue: %s%n", sales.shopTransactionCount(), money(shop)));

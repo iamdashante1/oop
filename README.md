@@ -10,7 +10,7 @@ java -cp out kpfl.ui.Main
 
 PowerShell: `javac -d out -encoding UTF-8 (Get-ChildItem -Recurse src/main -Filter *.java).FullName`
 
-Tests (Member 1): `javac -d out -cp out src/test/java/kpfl/Member1Tests.java && java -cp out kpfl.Member1Tests`
+Tests (Team & Personnel): `javac -d out -cp out src/test/java/kpfl/Member2Tests.java && java -cp out kpfl.Member2Tests`
 
 Run from the project folder so the `data/` folder is found.
 
@@ -31,9 +31,11 @@ Relationships are stored as IDs and rebuilt on load.
 | Package/class | Owner | Notes |
 |---|---|---|
 | `FootballLeague`, `MatchResult`, `LeagueCommissioner`, `StandingsEntry`, `ReportService`, `FileStorage`, `Main` | Member 1 | done |
-| `Person`, `Player`, `Coach`, `FootballTeam` | Member 2 | working first version written by Member 1 so the app runs. Member 2 should review/replace; keep signatures. Minimum player age is a **assumed 16** (`Player.MIN_AGE`) pending the lecturer |
+| `Person`, `Player`, `Coach`, `FootballTeam` | Member 2 | Team & Personnel implementation and notes in `docs/member2-team-personnel.md`. Minimum player age is **assumed 16** (`Player.MIN_AGE`) pending the lecturer |
 | `Stadium`, `Fixture`, `MatchOfficial` | Member 3 | working first version (double-booking checks for teams, stadiums and officials live in `FootballLeague.addFixture` / `assignOfficial`). Practice-stadium request workflow not built |
 | `Spectator`, `Ticket`, `Product`, `Merchandise`, `FoodItem`, `Receipt`, `StadiumShop`, `TicketService` | Member 4 | working first version; `AppData.sales()` feeds the sales report |
+
+Member 2 has a focused working copy in [`team-personnel/`](team-personnel/README.md). Its README explains how to compile those classes alone and copy finished changes into the shared app.
 
 ## Rules implemented
 - Win 3, draw 1, loss 0. Standings are computed from completed fixtures, so points can never be awarded twice.

@@ -43,6 +43,7 @@ public class StadiumShop {
     public Receipt checkout(Map<String, Integer> basket, double payment) {
         if (basket == null || basket.isEmpty()) throw new ValidationException("The basket is empty.");
         List<Receipt.Line> lines = new ArrayList<>();
+        // First pass: validate every item and prepare receipt lines without changing stock.
         for (Map.Entry<String, Integer> e : basket.entrySet()) {
             Product p = findProduct(e.getKey());
             int qty = e.getValue();
@@ -52,9 +53,11 @@ public class StadiumShop {
             lines.add(new Receipt.Line(p.getProductId(), p.getName(), qty, p.getUnitPrice()));
         }
         Receipt draft = new Receipt(nextReceiptId(), LocalDateTime.now(), lines, payment);
+        // The total is known only after all valid items have been added.
         if (payment < draft.getTotal())
             throw new ValidationException("Insufficient payment: total is " + Money.format(draft.getTotal())
                     + " but only " + Money.format(payment) + " was paid.");
+        // Second pass: commit stock changes only when the entire sale is valid.
         for (Receipt.Line l : lines) findProduct(l.getProductId()).removeStock(l.getQuantity());
         sales.add(draft);
         return draft;

@@ -24,15 +24,16 @@ public class LeagueCommissioner extends Person {
 
     public void approveTeam(FootballTeam team) {
         if (team == null) throw new ValidationException("Team not found.");
-        if (team.getStatus() == FootballTeam.Status.ACTIVE)
+        if (team.getStatus().equals("ACTIVE"))
             throw new ValidationException(team.getName() + " is already approved.");
-        team.setStatus(FootballTeam.Status.ACTIVE);
+        team.setStatus("ACTIVE");
+        // Keep a readable decision log alongside the change to team status.
         recordDecision("Approved team " + team.getRegistrationNo() + " (" + team.getName() + ")");
     }
 
     public void suspendTeam(FootballTeam team) {
         if (team == null) throw new ValidationException("Team not found.");
-        team.setStatus(FootballTeam.Status.SUSPENDED);
+        team.setStatus("SUSPENDED");
         recordDecision("Suspended team " + team.getRegistrationNo() + " (" + team.getName() + ")");
     }
 

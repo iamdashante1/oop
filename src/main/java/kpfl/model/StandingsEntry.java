@@ -11,10 +11,12 @@ public class StandingsEntry {
 
     /** Applies one match from this team's point of view. */
     public void apply(int scored, int conceded, int pointsEarned) {
+        // Add this match to the running totals for one team.
         played++;
         goalsFor += scored;
         goalsAgainst += conceded;
         points += pointsEarned;
+        // The points earned tell us whether this match was a win, draw or loss.
         if (pointsEarned == MatchResult.WIN_POINTS) won++;
         else if (pointsEarned == MatchResult.DRAW_POINTS) drawn++;
         else lost++;

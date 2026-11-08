@@ -38,6 +38,7 @@ public class FootballLeague {
     /** Registers a team as PENDING; the commissioner must approve it before it can be scheduled. */
     public void registerTeam(FootballTeam team) {
         if (team == null) throw new ValidationException("Team is required.");
+        // The registration number is the key used to find this team later.
         if (teams.containsKey(team.getRegistrationNo()))
             throw new ValidationException("Team registration number " + team.getRegistrationNo() + " already exists.");
         teams.put(team.getRegistrationNo(), team);
@@ -79,6 +80,7 @@ public class FootballLeague {
     public void addPlayer(String teamRegNo, Player player) {
         FootballTeam team = findTeam(teamRegNo);
         if (player == null) throw new ValidationException("Player is required.");
+        // Check league-wide ID uniqueness before FootballTeam changes its squad.
         requireNewPersonId(player.getId());
         team.addPlayer(player);
     }
@@ -96,6 +98,7 @@ public class FootballLeague {
     }
 
     private void requireNewPersonId(String personId) {
+        // Player, coach and match-official IDs share one namespace in this league.
         for (FootballTeam t : teams.values()) {
             for (Player p : t.getPlayers())
                 if (p.getId().equals(personId)) throw new ValidationException("Person ID " + personId + " is already used.");
@@ -135,6 +138,7 @@ public class FootballLeague {
             throw new ValidationException(official.getName() + " is not available for assignments.");
         if (fixture.hasOfficial(official.getId()))
             throw new ValidationException(official.getName() + " is already assigned to " + fixtureId + ".");
+        // Compare dates and times across fixtures so an official is never booked twice.
         for (Fixture other : fixtures.values()) {
             if (other != fixture && other.getDateTime().equals(fixture.getDateTime()) && other.hasOfficial(official.getId()))
                 throw new ValidationException(official.getName() + " is already assigned to fixture "
@@ -187,6 +191,7 @@ public class FootballLeague {
         requireEligible(fixture.getAwayTeam());
         if (!stadiums.containsKey(fixture.getStadium().getStadiumId()))
             throw new ValidationException("Stadium " + fixture.getStadium().getName() + " is not registered.");
+        // A team or stadium can be used again, but not at this exact date and time.
         for (Fixture other : fixtures.values()) {
             if (!other.getDateTime().equals(fixture.getDateTime())) continue;
             if (other.involves(fixture.getHomeTeam()))
@@ -243,6 +248,7 @@ public class FootballLeague {
         if (fixture.getStatus() == Fixture.Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " already has a result.");
         MatchResult result = new MatchResult(fixture.getFixtureId(), homeScore, awayScore);
+        // complete() links the result and marks the fixture COMPLETED in one step.
         fixture.complete(result);
         return result;
     }
@@ -250,14 +256,16 @@ public class FootballLeague {
     /** League table: points, then goal difference, then goals scored, then name. */
     public List<StandingsEntry> getStandings() {
         Map<String, StandingsEntry> table = new LinkedHashMap<>();
+        // Approved teams appear even before their first match. Pending teams do not.
         for (FootballTeam t : teams.values()) {
-            if (t.getStatus() != FootballTeam.Status.PENDING) {
+            if (!t.getStatus().equals("PENDING")) {
                 table.put(t.getRegistrationNo(), new StandingsEntry(t));
             }
         }
         for (Fixture f : fixtures.values()) {
             MatchResult r = f.getResult();
             if (f.getStatus() != Fixture.Status.COMPLETED || r == null) continue;
+            // Count each completed fixture once, from both teams' points of view.
             StandingsEntry home = table.computeIfAbsent(f.getHomeTeam().getRegistrationNo(),
                     k -> new StandingsEntry(f.getHomeTeam()));
             StandingsEntry away = table.computeIfAbsent(f.getAwayTeam().getRegistrationNo(),
@@ -266,6 +274,7 @@ public class FootballLeague {
             away.apply(r.getAwayScore(), r.getHomeScore(), r.awayPoints());
         }
         List<StandingsEntry> rows = new ArrayList<>(table.values());
+        // Tie breaks are goal difference, then goals scored, then team name.
         rows.sort(Comparator.comparingInt(StandingsEntry::getPoints).reversed()
                 .thenComparing(Comparator.comparingInt(StandingsEntry::getGoalDifference).reversed())
                 .thenComparing(Comparator.comparingInt(StandingsEntry::getGoalsFor).reversed())

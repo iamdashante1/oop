@@ -2,7 +2,7 @@ package kpfl.model;
 
 import kpfl.exception.ValidationException;
 
-/** A team coach. */
+/** A coach and their current team assignment. */
 public class Coach extends Person {
     private String qualification;
     private String coachingRole;
@@ -11,9 +11,8 @@ public class Coach extends Person {
     public Coach(String id, String name, int age, String gender, String qualification, String coachingRole) {
         super(id, name, age, gender);
         if (age < 18) throw new ValidationException("Coaches must be at least 18 years old.");
-        if (coachingRole == null || coachingRole.trim().isEmpty()) throw new ValidationException("Coaching role is required.");
-        this.qualification = qualification == null ? "" : qualification.trim();
-        this.coachingRole = coachingRole.trim();
+        setQualification(qualification);
+        setCoachingRole(coachingRole);
     }
 
     @Override
@@ -23,6 +22,25 @@ public class Coach extends Person {
     public String getCoachingRole() { return coachingRole; }
     public String getTeamRegNo() { return teamRegNo; }
 
+    @Override
+    public void setAge(int age) {
+        // Keep the existing adult-coach rule when a coach is created or edited.
+        if (age < 18) throw new ValidationException("Coaches must be at least 18 years old.");
+        super.setAge(age);
+    }
+
+    public void setQualification(String qualification) {
+        // A blank qualification means it has not been recorded yet.
+        this.qualification = qualification == null ? "" : qualification.trim();
+    }
+
+    public void setCoachingRole(String coachingRole) {
+        if (coachingRole == null || coachingRole.trim().isEmpty())
+            throw new ValidationException("Coaching role is required.");
+        this.coachingRole = coachingRole.trim();
+    }
+
+    // Only FootballTeam changes an assignment when a coach joins or leaves.
     void setTeamRegNo(String teamRegNo) { this.teamRegNo = teamRegNo; }
 
     @Override
