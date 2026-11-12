@@ -33,6 +33,8 @@ public class IntegrationTests {
 
     public static void main(String[] args) throws Exception {
         playersAndCoaches();
+        teamOperations();
+        teamRegistrationRules();
         fixtureConflicts();
         officialRules();
         commissionerLog();
@@ -71,6 +73,64 @@ public class IntegrationTests {
         check("player removed", l.findTeam("A").getSquadSize() == 0);
         check("polymorphic role", new Player("P9", "X", 20, "M", "GK", 1).getRole().equals("Player")
                 && new Coach("K9", "Y", 30, "M", "", "Assistant").getRole().equals("Coach"));
+    }
+
+    private static void teamOperations() {
+        FootballLeague l = new FootballLeague();
+        l.registerTeam(new FootballTeam("T1", "Harbour FC", "Kingston"));
+        l.registerTeam(new FootballTeam("T2", "Hill FC", "St Andrew"));
+        FootballTeam team = l.findTeam("T1");
+        team.setName("Harbour United");
+        team.setParish("Portland");
+        check("team update and case-insensitive search", l.searchTeams("harbour").contains(team)
+                && l.searchTeams("PORTLAND").contains(team));
+        check("team display shows updated details", team.toString().contains("Harbour United (Portland)"));
+
+        Player player = new Player("P1", "Pat", 20, "M", "Striker", 9);
+        Coach coach = new Coach("K1", "Kim", 40, "F", "B Licence", "Head Coach");
+        l.addPlayer("T1", player);
+        l.addCoach("T1", coach);
+        check("wrong team cannot find personnel", throwsValidation(() -> l.findPlayer("T2", "P1"))
+                && throwsValidation(() -> l.findCoach("T2", "K1")));
+        check("wrong team cannot remove personnel", throwsValidation(() -> l.removePlayer("T2", "P1"))
+                && throwsValidation(() -> l.removeCoach("T2", "K1"))
+                && team.getSquadSize() == 1 && team.getCoaches().size() == 1);
+        check("wrong team cannot change jersey", throwsValidation(() -> l.updatePlayerJersey("T2", "P1", 7))
+                && player.getJerseyNumber() == 9);
+
+        l.findPlayer("T1", "P1").setPosition("Winger");
+        l.updatePlayerJersey("T1", "P1", 7);
+        l.findCoach("T1", "K1").setCoachingRole("Assistant");
+        check("player and coach updates use the selected team", player.getPosition().equals("Winger")
+                && player.getJerseyNumber() == 7 && coach.getCoachingRole().equals("Assistant"));
+        l.removePlayer("T1", "P1");
+        l.removeCoach("T1", "K1");
+        check("remove clears both team assignments", team.getPlayers().isEmpty()
+                && team.getCoaches().isEmpty() && player.getTeamRegNo() == null && coach.getTeamRegNo() == null);
+    }
+
+    private static void teamRegistrationRules() {
+        FootballLeague l = new FootballLeague();
+        FootballTeam active = new FootballTeam("X", "Already Active", "Kingston");
+        active.setStatus("ACTIVE");
+        check("pre-approved team registration rejected", throwsValidation(() -> l.registerTeam(active)));
+
+        FootballTeam withSquad = new FootballTeam("Y", "Unregistered Squad", "Kingston");
+        withSquad.addPlayer(new Player("P99", "Early Player", 16, "M", "Forward", 11));
+        check("team must register before adding squad", throwsValidation(() -> l.registerTeam(withSquad)));
+
+        l.setCommissioner(new LeagueCommissioner("C1", "Comm", 40, "F"));
+        l.registerTeam(new FootballTeam("T1", "First", "Kingston"));
+        l.registerTeam(new FootballTeam("T2", "Second", "Kingston"));
+        check("trimmed duplicate registration rejected", throwsValidation(() ->
+                l.registerTeam(new FootballTeam(" T1 ", "Duplicate", "Kingston"))));
+        l.approveTeam("T1");
+        l.approveTeam("T2");
+        l.addStadium(new Stadium("S1", "Ground", "Kingston", 100));
+        FootballTeam fake = new FootballTeam("T1", "Fake First", "Kingston");
+        fake.setStatus("ACTIVE");
+        check("fixture requires registered team object", throwsValidation(() -> l.addFixture(new Fixture("F1",
+                fake, l.findTeam("T2"), l.findStadium("S1"), T1))));
     }
 
     private static void fixtureConflicts() {

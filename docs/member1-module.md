@@ -10,7 +10,7 @@
 - `FileStorage`: sequential pipe-delimited files in `data/`; links saved as IDs and rebuilt on load.
 
 ## Test evidence
-- `docs/test-evidence.txt` - 42 automated checks (Member1Tests 22, IntegrationTests 20), all PASS on JDK 17.
+- `docs/test-evidence.txt` - 107 automated checks (Member1Tests 22, Member2Tests 32, IntegrationTests 53), all PASS.
 - `docs/demo-evidence.txt` - scripted console sessions: sample data, fixtures report with officials, a rejected and a successful shop sale with receipt, duplicate official assignment, negative score, save, restart, identical reports after reload.
 
 | Required test | Result |
@@ -24,7 +24,7 @@
 
 ## Cross-module work done by Member 1 (to be reviewed by owners)
 Working versions of Members 2, 3 and 4's classes were written so the whole app runs end to end; each owner
-should review, adjust and explain their module. Open items: lecturer to confirm minimum player age (16 assumed),
+should review, adjust and explain their module. The player minimum age is confirmed as 16. Open items:
 practice-stadium request workflow (not built), more detailed GCT receipt layout if the lecturer wants one.
 
 ## Weekly contribution log (Member 1)

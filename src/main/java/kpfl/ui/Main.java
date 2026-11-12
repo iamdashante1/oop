@@ -111,10 +111,12 @@ public class Main {
     private void teamsMenu() {
         // The labels and actions line up by index in subMenu().
         subMenu("Teams, players & coaches",
-                new String[] {"Register team", "Approve team", "Suspend team", "List / search teams",
-                        "Add player", "Remove player", "Add coach", "Show a team's squad"},
-                new Runnable[] {this::registerTeam, this::approveTeam, this::suspendTeam, this::listTeams,
-                        this::addPlayer, this::removePlayer, this::addCoach, this::showSquad});
+                new String[] {"Register team", "Update team", "Approve team", "Suspend team",
+                        "List / search teams", "Show a team's squad", "Add player", "Update player",
+                        "Remove player", "Add coach", "Update coach", "Remove coach"},
+                new Runnable[] {this::registerTeam, this::updateTeam, this::approveTeam, this::suspendTeam,
+                        this::listTeams, this::showSquad, this::addPlayer, this::updatePlayer,
+                        this::removePlayer, this::addCoach, this::updateCoach, this::removeCoach});
     }
 
     private void fixturesMenu() {
@@ -161,6 +163,17 @@ public class Main {
         System.out.println("Registered " + team.getName() + " (PENDING approval).");
     }
 
+    private void updateTeam() {
+        FootballTeam team = league().findTeam(prompt("Team registration no"));
+        System.out.println(team);
+        switch (prompt("Change: 1 Name, 2 Parish")) {
+            case "1": team.setName(prompt("New name")); break;
+            case "2": team.setParish(prompt("New parish")); break;
+            default: throw new ValidationException("Choose 1 or 2.");
+        }
+        System.out.println("Updated " + team);
+    }
+
     private void approveTeam() {
         league().approveTeam(prompt("Registration no to approve"));
         System.out.println("Team approved.");
@@ -179,9 +192,28 @@ public class Main {
 
     private void addPlayer() {
         String teamNo = prompt("Team registration no");
+        league().findTeam(teamNo);
         league().addPlayer(teamNo, new Player(prompt("Player ID"), prompt("Name"), readInt("Age"),
                 prompt("Gender"), prompt("Position"), readInt("Jersey number")));
         System.out.println("Player added.");
+    }
+
+    private void updatePlayer() {
+        String teamNo = prompt("Team registration no");
+        String playerId = prompt("Player ID");
+        Player player = league().findPlayer(teamNo, playerId);
+        System.out.println(player);
+        switch (prompt("Change: 1 Name, 2 Age, 3 Gender, 4 Position, 5 Jersey, 6 Goals, 7 Status")) {
+            case "1": player.setName(prompt("New name")); break;
+            case "2": player.setAge(readInt("New age")); break;
+            case "3": player.setGender(prompt("New gender")); break;
+            case "4": player.setPosition(prompt("New position")); break;
+            case "5": league().updatePlayerJersey(teamNo, playerId, readInt("New jersey number")); break;
+            case "6": player.setGoals(readInt("New goal total")); break;
+            case "7": player.setPlayerStatus(prompt("New status (ACTIVE/INJURED/SUSPENDED)")); break;
+            default: throw new ValidationException("Choose a number from 1 to 7.");
+        }
+        System.out.println("Updated " + player);
     }
 
     private void removePlayer() {
@@ -191,9 +223,29 @@ public class Main {
 
     private void addCoach() {
         String teamNo = prompt("Team registration no");
+        league().findTeam(teamNo);
         league().addCoach(teamNo, new Coach(prompt("Coach ID"), prompt("Name"), readInt("Age"),
                 prompt("Gender"), prompt("Qualification"), prompt("Coaching role")));
         System.out.println("Coach added.");
+    }
+
+    private void updateCoach() {
+        Coach coach = league().findCoach(prompt("Team registration no"), prompt("Coach ID"));
+        System.out.println(coach);
+        switch (prompt("Change: 1 Name, 2 Age, 3 Gender, 4 Qualification, 5 Coaching role")) {
+            case "1": coach.setName(prompt("New name")); break;
+            case "2": coach.setAge(readInt("New age")); break;
+            case "3": coach.setGender(prompt("New gender")); break;
+            case "4": coach.setQualification(prompt("New qualification")); break;
+            case "5": coach.setCoachingRole(prompt("New coaching role")); break;
+            default: throw new ValidationException("Choose a number from 1 to 5.");
+        }
+        System.out.println("Updated " + coach);
+    }
+
+    private void removeCoach() {
+        league().removeCoach(prompt("Team registration no"), prompt("Coach ID"));
+        System.out.println("Coach removed.");
     }
 
     private void showSquad() {

@@ -5,7 +5,7 @@ import kpfl.exception.ValidationException;
 /** One football player and their playing record. */
 public class Player extends Person {
 
-    public static final int MIN_AGE = 16;
+    public static final int MIN_AGE = 16; // Confirmed project minimum age.
 
     private String position;
     private int jerseyNumber;
@@ -16,8 +16,7 @@ public class Player extends Person {
 
     public Player(String id, String name, int age, String gender, String position, int jerseyNumber) {
         super(id, name, age, gender);
-        if (age < MIN_AGE)
-            throw new ValidationException("Players must be at least " + MIN_AGE + " years old.");
+        setAge(age);
         // These setters reject a missing position or an invalid shirt number.
         setPosition(position);
         setJerseyNumber(jerseyNumber);
@@ -47,12 +46,16 @@ public class Player extends Person {
     }
 
     public void setJerseyNumber(int jerseyNumber) {
-        if (jerseyNumber < 1 || jerseyNumber > 99)
-            throw new ValidationException("Jersey number must be 1-99.");
-        // Remove the player from the squad before changing the number, then add them back.
-        // This lets FootballTeam check that the new number is not already taken.
+        // An assigned player's number must be changed through FootballTeam.
         if (teamRegNo != null && this.jerseyNumber != jerseyNumber)
             throw new ValidationException("Remove the player from the team before changing their jersey number.");
+        setJerseyNumberFromTeam(jerseyNumber);
+    }
+
+    // FootballTeam checks whether the number is free before changing an assigned player.
+    void setJerseyNumberFromTeam(int jerseyNumber) {
+        if (jerseyNumber < 1 || jerseyNumber > 99)
+            throw new ValidationException("Jersey number must be 1-99.");
         this.jerseyNumber = jerseyNumber;
     }
 

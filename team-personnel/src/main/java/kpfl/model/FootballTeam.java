@@ -84,6 +84,20 @@ public class FootballTeam {
         return false;
     }
 
+    public Player findPlayer(String playerId) {
+        for (Player p : players)
+            if (p.getId().equals(playerId)) return p;
+        throw new ValidationException("No player " + playerId + " in team " + registrationNo + ".");
+    }
+
+    public void updatePlayerJersey(String playerId, int jerseyNumber) {
+        Player player = findPlayer(playerId);
+        for (Player other : players)
+            if (other != player && other.getJerseyNumber() == jerseyNumber)
+                throw new ValidationException("Jersey number " + jerseyNumber + " is already taken in " + name + ".");
+        player.setJerseyNumberFromTeam(jerseyNumber);
+    }
+
     public void addCoach(Coach c) {
         if (c == null) throw new ValidationException("Coach is required.");
         // The same coach cannot appear on two teams' coach lists.
@@ -108,6 +122,12 @@ public class FootballTeam {
             }
         }
         return false;
+    }
+
+    public Coach findCoach(String coachId) {
+        for (Coach c : coaches)
+            if (c.getId().equals(coachId)) return c;
+        throw new ValidationException("No coach " + coachId + " in team " + registrationNo + ".");
     }
 
     // Return copies so callers cannot change the team's lists by accident.

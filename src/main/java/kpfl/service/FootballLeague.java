@@ -41,6 +41,10 @@ public class FootballLeague {
         // The registration number is the key used to find this team later.
         if (teams.containsKey(team.getRegistrationNo()))
             throw new ValidationException("Team registration number " + team.getRegistrationNo() + " already exists.");
+        if (!team.getStatus().equals("PENDING"))
+            throw new ValidationException("A new team must be PENDING until the commissioner approves it.");
+        if (!team.getPlayers().isEmpty() || !team.getCoaches().isEmpty())
+            throw new ValidationException("Register the team before adding players or coaches.");
         teams.put(team.getRegistrationNo(), team);
     }
 
@@ -93,8 +97,25 @@ public class FootballLeague {
     }
 
     public void removePlayer(String teamRegNo, String playerId) {
-        if (!findTeam(teamRegNo).removePlayer(playerId))
+        if (!findTeam(teamRegNo).removePlayer(playerId == null ? null : playerId.trim()))
             throw new ValidationException("No player " + playerId + " in that team.");
+    }
+
+    public Player findPlayer(String teamRegNo, String playerId) {
+        return findTeam(teamRegNo).findPlayer(playerId == null ? null : playerId.trim());
+    }
+
+    public void updatePlayerJersey(String teamRegNo, String playerId, int jerseyNumber) {
+        findTeam(teamRegNo).updatePlayerJersey(playerId == null ? null : playerId.trim(), jerseyNumber);
+    }
+
+    public Coach findCoach(String teamRegNo, String coachId) {
+        return findTeam(teamRegNo).findCoach(coachId == null ? null : coachId.trim());
+    }
+
+    public void removeCoach(String teamRegNo, String coachId) {
+        if (!findTeam(teamRegNo).removeCoach(coachId == null ? null : coachId.trim()))
+            throw new ValidationException("No coach " + coachId + " in that team.");
     }
 
     private void requireNewPersonId(String personId) {
@@ -213,7 +234,8 @@ public class FootballLeague {
     }
 
     private void requireEligible(FootballTeam team) {
-        if (!teams.containsKey(team.getRegistrationNo()))
+        // The fixture must use the actual registered team, not another object with the same number.
+        if (teams.get(team.getRegistrationNo()) != team)
             throw new ValidationException("Team " + team.getName() + " is not registered.");
         if (!team.isEligibleForFixture())
             throw new ValidationException("Team " + team.getName() + " is not eligible for fixtures (status "

@@ -169,8 +169,9 @@ public class FileStorage {
             // Teams must exist before saved players and coaches can be assigned.
             for (String[] p : readLines("teams.txt", 4)) {
                 FootballTeam t = new FootballTeam(p[0], p[1], p[2]);
-                t.setStatus(p[3]);
                 league.registerTeam(t);
+                // Restore the saved status after normal PENDING registration.
+                t.setStatus(p[3]);
             }
             for (String[] p : readLines("players.txt", 9)) {
                 Player pl = new Player(p[0], p[1], Integer.parseInt(p[2]), p[3], p[5], Integer.parseInt(p[6]));

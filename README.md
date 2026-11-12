@@ -28,10 +28,13 @@ Plain pipe-separated text files, one per record type (see the `FileStorage` clas
 Relationships are stored as IDs and rebuilt on load.
 
 ## Module status
+
+**Shared class for every member:** Read the [Person contract](docs/person-contract.md) before changing `LeagueCommissioner`, `Player`, `Coach`, `MatchOfficial`, or `Spectator`. Their constructors call `super(id, name, age, gender)`, and each class provides `getRole()`.
+
 | Package/class | Owner | Notes |
 |---|---|---|
 | `FootballLeague`, `MatchResult`, `LeagueCommissioner`, `StandingsEntry`, `ReportService`, `FileStorage`, `Main` | Member 1 | done |
-| `Person`, `Player`, `Coach`, `FootballTeam` | Member 2 | Team & Personnel implementation and notes in `docs/member2-team-personnel.md`. Minimum player age is **assumed 16** (`Player.MIN_AGE`) pending the lecturer |
+| `Person`, `Player`, `Coach`, `FootballTeam` | Member 2 | Team & Personnel implementation and notes in `docs/member2-team-personnel.md`. Minimum player age is **16** (`Player.MIN_AGE`) |
 | `Stadium`, `Fixture`, `MatchOfficial` | Member 3 | working first version (double-booking checks for teams, stadiums and officials live in `FootballLeague.addFixture` / `assignOfficial`). Practice-stadium request workflow not built |
 | `Spectator`, `Ticket`, `Product`, `Merchandise`, `FoodItem`, `Receipt`, `StadiumShop`, `TicketService` | Member 4 | working first version; `AppData.sales()` feeds the sales report |
 

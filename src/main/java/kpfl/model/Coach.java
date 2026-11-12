@@ -10,7 +10,7 @@ public class Coach extends Person {
 
     public Coach(String id, String name, int age, String gender, String qualification, String coachingRole) {
         super(id, name, age, gender);
-        if (age < 18) throw new ValidationException("Coaches must be at least 18 years old.");
+        setAge(age);
         setQualification(qualification);
         setCoachingRole(coachingRole);
     }
