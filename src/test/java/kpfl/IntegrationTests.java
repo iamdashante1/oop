@@ -34,6 +34,8 @@ public class IntegrationTests {
     public static void main(String[] args) throws Exception {
         playersAndCoaches();
         fixtureConflicts();
+        stadiumManagement();
+        fixtureAndOfficialSearch();
         officialRules();
         commissionerLog();
         ticketCapacity();
@@ -85,6 +87,32 @@ public class IntegrationTests {
                 l.findTeam("A"), l.findTeam("A"), l.findStadium("S1"), T1)));
         check("invalid stadium capacity rejected", throwsValidation(() -> new Stadium("S9", "Bad", "X", 0)));
         check("negative ticket price rejected", throwsValidation(() -> new Stadium("S9", "Bad", "X", 10, -5, "Good")));
+    }
+
+
+    private static void stadiumManagement() {
+        FootballLeague l = base().getLeague();
+        check("stadium interface exposes display name", l.findStadium("S1").getStadiumName().equals("Small Ground"));
+        check("stadium search finds location", l.searchStadiums("kingston").size() == 1);
+        l.updateStadium("S1", "Updated Ground", "Spanish Town", 300, 1250, "Excellent");
+        Stadium updated = l.findStadium("S1");
+        check("stadium update changes all editable fields", updated.getName().equals("Updated Ground")
+                && updated.getLocation().equals("Spanish Town") && updated.getCapacity() == 300
+                && updated.getTicketPrice() == 1250 && updated.getFieldCondition().equals("Excellent"));
+        check("invalid stadium update rejected", throwsValidation(() ->
+                l.updateStadium("S1", "Bad Update", "Kingston", 0, 100, "Good")));
+        check("invalid stadium update is atomic", updated.getName().equals("Updated Ground") && updated.getCapacity() == 300);
+        check("NaN ticket price rejected", throwsValidation(() -> new Stadium("SN", "Bad", "X", 10, Double.NaN, "Good")));
+    }
+
+    private static void fixtureAndOfficialSearch() {
+        FootballLeague l = base().getLeague();
+        check("fixture implements integration contract", l.findFixture("F1").getHomeTeamId().equals("A")
+                && l.findFixture("F1").getAwayTeamId().equals("B") && l.findFixture("F1").getStadiumId().equals("S1"));
+        check("fixture search by team", l.searchFixtures("team a").size() == 1);
+        check("official search by rank", l.searchOfficials("referee").size() == 1);
+        check("team implements integration contract", l.findTeam("A").getTeamId().equals("A")
+                && l.findTeam("A").getTeamName().equals("Team A"));
     }
 
     private static void officialRules() {
