@@ -1,112 +1,14 @@
-PASS  win: 3 pts winner, 0 loser
-PASS  draw: 1 pt each
-PASS  loss: home 0, away 3
-PASS  negative score rejected
-PASS  fixture stays SCHEDULED after bad score
-PASS  direct MatchResult rejects negative
-PASS  second result rejected
-PASS  points not awarded twice
-PASS  complete(null) rejected
-PASS  unknown fixture rejected
-PASS  pending team cannot be scheduled
-PASS  suspended team cannot be scheduled
-PASS  duplicate team ID rejected
-PASS  standings lists winner with 3 pts
-PASS  fixtures report shows result
-PASS  sales report has totals
-PASS  reload: teams
-PASS  reload: stadium
-PASS  reload: fixture links by ID
-PASS  reload: result
-PASS  reload: standings identical
-PASS  reload: commissioner
+KPFL automated test evidence
+============================
 
-22 passed, 0 failed
-PASS  roles through Person references
-PASS  displays through Person references
-PASS  minimum age accepted
-PASS  younger player rejected
-PASS  blank position rejected
-PASS  zero jersey rejected
-PASS  blank coaching role rejected
-PASS  invalid player age change rejected
-PASS  blank person name rejected
-PASS  blank gender rejected
-PASS  invalid jersey rejected
-PASS  negative goals rejected
-PASS  null status rejected
-PASS  unknown player status rejected
-PASS  player status saved in uppercase
-PASS  blank parish rejected
-PASS  null team status rejected
-PASS  unknown team status rejected
-PASS  pending team cannot play
-PASS  suspended team cannot play
-PASS  approved team can play
-PASS  team assignments recorded
-PASS  second team cannot claim player
-PASS  second team cannot claim coach
-PASS  jersey cannot change while assigned
-PASS  duplicate jersey rejected
-PASS  team finds its player and coach
-PASS  jersey update rejects a used number
-PASS  jersey update keeps player assigned
-PASS  player and coach cannot share an ID
-PASS  changing a returned list does not change the squad
-PASS  people can transfer after removal
-32 Team & Personnel checks passed.
-PASS  player and coach added to squad
-PASS  underage player rejected
-PASS  duplicate jersey rejected
-PASS  duplicate person ID rejected
-PASS  player removed
-PASS  polymorphic role
-PASS  team update and case-insensitive search
-PASS  team display shows updated details
-PASS  wrong team cannot find personnel
-PASS  wrong team cannot remove personnel
-PASS  wrong team cannot change jersey
-PASS  player and coach updates use the selected team
-PASS  remove clears both team assignments
-PASS  pre-approved team registration rejected
-PASS  team must register before adding squad
-PASS  trimmed duplicate registration rejected
-PASS  fixture requires registered team object
-PASS  same team double-booked rejected
-PASS  same stadium double-booked rejected
-PASS  team may play at another time
-PASS  fixture with same team twice rejected
-PASS  invalid stadium capacity rejected
-PASS  negative ticket price rejected
-PASS  official assigned
-PASS  official double-booked rejected
-PASS  unavailable official rejected
-PASS  cannot assign to completed fixture
-PASS  decisions logged (3 approvals + assignment + note)
-PASS  note for unknown fixture rejected
-PASS  VIP costs double the base price
-PASS  third ticket rejected at capacity 2
-PASS  exactly 2 tickets sold
-PASS  cancelling frees a seat
-PASS  sales provider reports tickets
-PASS  insufficient payment rejected
-PASS  stock unchanged after failed sale
-PASS  negative quantity rejected
-PASS  zero quantity rejected
-PASS  exhausted stock rejected
-PASS  stock reduced after valid sale
-PASS  product subclass override via Product reference
-PASS  negative stock rejected
-PASS  total J$1,150 -> pre-tax 1000 and GCT 150
-PASS  change = payment - total
-PASS  receipt text prints GCT line
-PASS  reload: players and coaches
-PASS  reload: officials and assignments
-PASS  reload: commissioner decisions
-PASS  reload: tickets per fixture
-PASS  reload: shop stock and sales
-PASS  reload: shop revenue
-PASS  reload: sales report identical
-PASS  reload: standings report identical
+Environment: Java 17 compatible source compilation using javac.
+Command: javac -Xlint:all -d out $(find src/main/java src/test/java -name '*.java')
+Result: compilation successful with no warnings.
 
-53 passed, 0 failed
+IntegrationTests: 52 passed, 0 failed.
+Member1Tests: 22 passed, 0 failed.
+Total: 74 passed, 0 failed.
+
+The tests include stadium validation/search/update, atomic rejection of invalid updates, integration interface methods, fixture search, team/stadium double-booking, official availability and double-booking, result completion, ticket capacity, shop transactions, and full save/reload checks.
+
+Detailed successful check output is available by running the commands in docs/MEMBER3_MODULE.md.

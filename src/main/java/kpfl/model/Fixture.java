@@ -1,6 +1,7 @@
 package kpfl.model;
 
 import kpfl.exception.ValidationException;
+import kpfl.integration.FixtureInfo;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 /** A scheduled match between two different teams at a stadium, with assigned officials and a result once played. */
-public class Fixture {
+public class Fixture implements FixtureInfo {
     public enum Status { SCHEDULED, COMPLETED }
 
     private final String fixtureId;
@@ -35,17 +36,25 @@ public class Fixture {
         this.dateTime = dateTime;
     }
 
-    public String getFixtureId() { return fixtureId; }
+    @Override public String getFixtureId() { return fixtureId; }
+    @Override public String getHomeTeamId() { return homeTeam.getRegistrationNo(); }
+    @Override public String getAwayTeamId() { return awayTeam.getRegistrationNo(); }
+    @Override public String getStadiumId() { return stadium.getStadiumId(); }
+    @Override public boolean isCompleted() { return status == Status.COMPLETED; }
+    /** Called by the league only after a valid result has been linked. */
+    @Override public void markCompleted() {
+        if (result == null) throw new ValidationException("A result must be linked before completing a fixture.");
+        status = Status.COMPLETED;
+    }
     public FootballTeam getHomeTeam() { return homeTeam; }
     public FootballTeam getAwayTeam() { return awayTeam; }
     public Stadium getStadium() { return stadium; }
-    public LocalDateTime getDateTime() { return dateTime; }
+    @Override public LocalDateTime getDateTime() { return dateTime; }
     public Status getStatus() { return status; }
     public MatchResult getResult() { return result; }
     public List<MatchOfficial> getOfficials() { return Collections.unmodifiableList(officials); }
 
     public boolean involves(FootballTeam team) {
-        // Compare stable registration numbers instead of object references.
         String no = team.getRegistrationNo();
         return homeTeam.getRegistrationNo().equals(no) || awayTeam.getRegistrationNo().equals(no);
     }
@@ -57,6 +66,14 @@ public class Fixture {
 
     /** Low-level add; FootballLeague.assignOfficial performs the availability and conflict checks. */
     public void addOfficial(MatchOfficial official) {
+        if (official == null) throw new ValidationException("Match official is required.");
+        if (status == Status.COMPLETED) throw new ValidationException("Cannot assign officials to a completed fixture.");
+        if (!hasOfficial(official.getId())) officials.add(official);
+    }
+
+    /** Restore a historical assignment from storage, including assignments on completed fixtures. */
+    public void restoreOfficial(MatchOfficial official) {
+        if (official == null) throw new ValidationException("Match official is required.");
         if (!hasOfficial(official.getId())) officials.add(official);
     }
 
@@ -67,7 +84,6 @@ public class Fixture {
             throw new ValidationException("Result belongs to a different fixture.");
         if (status == Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " already has a result.");
-        // Only after every check passes do we change the stored result and status.
         this.result = result;
         this.status = Status.COMPLETED;
     }

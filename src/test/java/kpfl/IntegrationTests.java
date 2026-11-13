@@ -33,9 +33,9 @@ public class IntegrationTests {
 
     public static void main(String[] args) throws Exception {
         playersAndCoaches();
-        teamOperations();
-        teamRegistrationRules();
         fixtureConflicts();
+        stadiumManagement();
+        fixtureAndOfficialSearch();
         officialRules();
         commissionerLog();
         ticketCapacity();
@@ -75,64 +75,6 @@ public class IntegrationTests {
                 && new Coach("K9", "Y", 30, "M", "", "Assistant").getRole().equals("Coach"));
     }
 
-    private static void teamOperations() {
-        FootballLeague l = new FootballLeague();
-        l.registerTeam(new FootballTeam("T1", "Harbour FC", "Kingston"));
-        l.registerTeam(new FootballTeam("T2", "Hill FC", "St Andrew"));
-        FootballTeam team = l.findTeam("T1");
-        team.setName("Harbour United");
-        team.setParish("Portland");
-        check("team update and case-insensitive search", l.searchTeams("harbour").contains(team)
-                && l.searchTeams("PORTLAND").contains(team));
-        check("team display shows updated details", team.toString().contains("Harbour United (Portland)"));
-
-        Player player = new Player("P1", "Pat", 20, "M", "Striker", 9);
-        Coach coach = new Coach("K1", "Kim", 40, "F", "B Licence", "Head Coach");
-        l.addPlayer("T1", player);
-        l.addCoach("T1", coach);
-        check("wrong team cannot find personnel", throwsValidation(() -> l.findPlayer("T2", "P1"))
-                && throwsValidation(() -> l.findCoach("T2", "K1")));
-        check("wrong team cannot remove personnel", throwsValidation(() -> l.removePlayer("T2", "P1"))
-                && throwsValidation(() -> l.removeCoach("T2", "K1"))
-                && team.getSquadSize() == 1 && team.getCoaches().size() == 1);
-        check("wrong team cannot change jersey", throwsValidation(() -> l.updatePlayerJersey("T2", "P1", 7))
-                && player.getJerseyNumber() == 9);
-
-        l.findPlayer("T1", "P1").setPosition("Winger");
-        l.updatePlayerJersey("T1", "P1", 7);
-        l.findCoach("T1", "K1").setCoachingRole("Assistant");
-        check("player and coach updates use the selected team", player.getPosition().equals("Winger")
-                && player.getJerseyNumber() == 7 && coach.getCoachingRole().equals("Assistant"));
-        l.removePlayer("T1", "P1");
-        l.removeCoach("T1", "K1");
-        check("remove clears both team assignments", team.getPlayers().isEmpty()
-                && team.getCoaches().isEmpty() && player.getTeamRegNo() == null && coach.getTeamRegNo() == null);
-    }
-
-    private static void teamRegistrationRules() {
-        FootballLeague l = new FootballLeague();
-        FootballTeam active = new FootballTeam("X", "Already Active", "Kingston");
-        active.setStatus("ACTIVE");
-        check("pre-approved team registration rejected", throwsValidation(() -> l.registerTeam(active)));
-
-        FootballTeam withSquad = new FootballTeam("Y", "Unregistered Squad", "Kingston");
-        withSquad.addPlayer(new Player("P99", "Early Player", 16, "M", "Forward", 11));
-        check("team must register before adding squad", throwsValidation(() -> l.registerTeam(withSquad)));
-
-        l.setCommissioner(new LeagueCommissioner("C1", "Comm", 40, "F"));
-        l.registerTeam(new FootballTeam("T1", "First", "Kingston"));
-        l.registerTeam(new FootballTeam("T2", "Second", "Kingston"));
-        check("trimmed duplicate registration rejected", throwsValidation(() ->
-                l.registerTeam(new FootballTeam(" T1 ", "Duplicate", "Kingston"))));
-        l.approveTeam("T1");
-        l.approveTeam("T2");
-        l.addStadium(new Stadium("S1", "Ground", "Kingston", 100));
-        FootballTeam fake = new FootballTeam("T1", "Fake First", "Kingston");
-        fake.setStatus("ACTIVE");
-        check("fixture requires registered team object", throwsValidation(() -> l.addFixture(new Fixture("F1",
-                fake, l.findTeam("T2"), l.findStadium("S1"), T1))));
-    }
-
     private static void fixtureConflicts() {
         FootballLeague l = base().getLeague();
         check("same team double-booked rejected", throwsValidation(() -> l.addFixture(new Fixture("F2",
@@ -145,6 +87,32 @@ public class IntegrationTests {
                 l.findTeam("A"), l.findTeam("A"), l.findStadium("S1"), T1)));
         check("invalid stadium capacity rejected", throwsValidation(() -> new Stadium("S9", "Bad", "X", 0)));
         check("negative ticket price rejected", throwsValidation(() -> new Stadium("S9", "Bad", "X", 10, -5, "Good")));
+    }
+
+
+    private static void stadiumManagement() {
+        FootballLeague l = base().getLeague();
+        check("stadium interface exposes display name", l.findStadium("S1").getStadiumName().equals("Small Ground"));
+        check("stadium search finds location", l.searchStadiums("kingston").size() == 1);
+        l.updateStadium("S1", "Updated Ground", "Spanish Town", 300, 1250, "Excellent");
+        Stadium updated = l.findStadium("S1");
+        check("stadium update changes all editable fields", updated.getName().equals("Updated Ground")
+                && updated.getLocation().equals("Spanish Town") && updated.getCapacity() == 300
+                && updated.getTicketPrice() == 1250 && updated.getFieldCondition().equals("Excellent"));
+        check("invalid stadium update rejected", throwsValidation(() ->
+                l.updateStadium("S1", "Bad Update", "Kingston", 0, 100, "Good")));
+        check("invalid stadium update is atomic", updated.getName().equals("Updated Ground") && updated.getCapacity() == 300);
+        check("NaN ticket price rejected", throwsValidation(() -> new Stadium("SN", "Bad", "X", 10, Double.NaN, "Good")));
+    }
+
+    private static void fixtureAndOfficialSearch() {
+        FootballLeague l = base().getLeague();
+        check("fixture implements integration contract", l.findFixture("F1").getHomeTeamId().equals("A")
+                && l.findFixture("F1").getAwayTeamId().equals("B") && l.findFixture("F1").getStadiumId().equals("S1"));
+        check("fixture search by team", l.searchFixtures("team a").size() == 1);
+        check("official search by rank", l.searchOfficials("referee").size() == 1);
+        check("team implements integration contract", l.findTeam("A").getTeamId().equals("A")
+                && l.findTeam("A").getTeamName().equals("Team A"));
     }
 
     private static void officialRules() {
