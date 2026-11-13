@@ -17,6 +17,10 @@ public class MatchOfficial extends Person {
     public String getRole() { return "Match Official"; }
 
     public String getRank() { return rank; }
+    public void setRank(String rank) {
+        if (rank == null || rank.trim().isEmpty()) throw new ValidationException("Official rank/role is required.");
+        this.rank = rank.trim();
+    }
     public boolean isAvailable() { return available; }
     public void setAvailable(boolean available) { this.available = available; }
 
