@@ -35,6 +35,7 @@ public class MatchResult {
     }
 
     public int homePoints() {
+        // Translate the outcome into the league's 3/1/0 points rule.
         switch (getOutcome()) {
             case HOME_WIN: return WIN_POINTS;
             case DRAW: return DRAW_POINTS;

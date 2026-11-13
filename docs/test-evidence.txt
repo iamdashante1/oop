@@ -22,12 +22,56 @@ PASS  reload: standings identical
 PASS  reload: commissioner
 
 22 passed, 0 failed
+PASS  roles through Person references
+PASS  displays through Person references
+PASS  minimum age accepted
+PASS  younger player rejected
+PASS  blank position rejected
+PASS  zero jersey rejected
+PASS  blank coaching role rejected
+PASS  invalid player age change rejected
+PASS  blank person name rejected
+PASS  blank gender rejected
+PASS  invalid jersey rejected
+PASS  negative goals rejected
+PASS  null status rejected
+PASS  unknown player status rejected
+PASS  player status saved in uppercase
+PASS  blank parish rejected
+PASS  null team status rejected
+PASS  unknown team status rejected
+PASS  pending team cannot play
+PASS  suspended team cannot play
+PASS  approved team can play
+PASS  team assignments recorded
+PASS  second team cannot claim player
+PASS  second team cannot claim coach
+PASS  jersey cannot change while assigned
+PASS  duplicate jersey rejected
+PASS  team finds its player and coach
+PASS  jersey update rejects a used number
+PASS  jersey update keeps player assigned
+PASS  player and coach cannot share an ID
+PASS  changing a returned list does not change the squad
+PASS  people can transfer after removal
+32 Team & Personnel checks passed.
 PASS  player and coach added to squad
 PASS  underage player rejected
 PASS  duplicate jersey rejected
 PASS  duplicate person ID rejected
 PASS  player removed
 PASS  polymorphic role
+PASS  team update and case-insensitive search
+PASS  team display shows updated details
+PASS  wrong team cannot find personnel
+PASS  wrong team cannot remove personnel
+PASS  wrong team cannot change jersey
+PASS  player and coach updates use the selected team
+PASS  remove clears both team assignments
+PASS  pre-approved team registration rejected
+PASS  team must register before adding squad
+PASS  trimmed duplicate registration rejected
+PASS  fixture requires registered team object
 PASS  same team double-booked rejected
 PASS  same stadium double-booked rejected
 PASS  team may play at another time
@@ -65,4 +109,4 @@ PASS  reload: shop revenue
 PASS  reload: sales report identical
 PASS  reload: standings report identical
 
-42 passed, 0 failed
+53 passed, 0 failed

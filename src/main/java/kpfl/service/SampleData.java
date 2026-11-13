@@ -25,6 +25,7 @@ public final class SampleData {
         FootballLeague league = app.getLeague();
         league.setCommissioner(new LeagueCommissioner("C001", "League Commissioner", 45, "N/A"));
 
+        // Register and approve teams before scheduling them in fixtures.
         String[][] teams = {
                 {"T001", "Kingston Lions", "Kingston"}, {"T002", "Portmore Falcons", "St Catherine"},
                 {"T003", "Spanish Town Eagles", "St Catherine"}, {"T004", "Montego Bay United", "St James"}};
@@ -54,6 +55,7 @@ public final class SampleData {
         league.assignOfficial("F001", "O001");
         league.assignOfficial("F003", "O001");
         league.recordPreparationNote("F003", "Pitch inspection passed");
+        // The first two matches are completed; F003 remains available for ticket sales.
         league.recordResult("F001", 2, 1);
         league.recordResult("F002", 0, 0);
 

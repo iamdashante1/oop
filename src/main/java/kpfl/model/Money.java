@@ -8,6 +8,8 @@ public final class Money {
 
     public static double round2(double v) { return Math.round(v * 100.0) / 100.0; }
 
+    // The price already includes GCT. Divide by 1.15 to find the pre-tax part;
+    // total * 0.15 / 1.15 gives only the GCT already inside that price.
     public static double gctIncluded(double total) { return round2(total * GCT_RATE / (1 + GCT_RATE)); }
 
     public static double preTax(double total) { return round2(total - gctIncluded(total)); }

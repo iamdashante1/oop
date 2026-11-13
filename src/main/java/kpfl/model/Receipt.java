@@ -37,6 +37,7 @@ public class Receipt {
     public Receipt(String receiptId, LocalDateTime time, List<Line> lines, double payment) {
         this.receiptId = receiptId;
         this.time = time;
+        // Copy the basket so later changes to it cannot change an issued receipt.
         this.lines = new ArrayList<>(lines);
         double sum = 0;
         for (Line l : lines) sum += l.getLineTotal();
@@ -50,10 +51,12 @@ public class Receipt {
     public double getTotal() { return total; }
     public double getPayment() { return payment; }
     public double getChange() { return Money.round2(payment - total); }
+    // GCT is extracted from the tax-inclusive total, not added to it again.
     public double getGct() { return Money.gctIncluded(total); }
     public double getSubtotal() { return Money.preTax(total); }
 
     public String format() {
+        // StringBuilder collects the receipt lines before we print the finished text.
         StringBuilder sb = new StringBuilder();
         sb.append("---------- KPFL STADIUM SHOP ----------\n");
         sb.append("Receipt ").append(receiptId).append("  ")

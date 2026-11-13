@@ -12,6 +12,7 @@ public class AppData {
 
     /** Sales view used by the sales report. */
     public SalesProvider sales() {
+        // The report asks this read-only view for totals; ticket/shop objects stay here.
         return new SalesProvider() {
             @Override public int ticketsSold(String fixtureId) { return tickets.ticketsSold(fixtureId); }
             @Override public double ticketRevenue(String fixtureId) { return tickets.ticketRevenue(fixtureId); }

@@ -58,6 +58,7 @@ public class FileStorage {
     }
 
     public boolean hasSavedData() {
+        // teams.txt is the marker that a saved league exists in this folder.
         return Files.exists(dir.resolve("teams.txt"));
     }
 
@@ -78,12 +79,13 @@ public class FileStorage {
             List<String> teamLines = new ArrayList<>();
             List<String> playerLines = new ArrayList<>();
             List<String> coachLines = new ArrayList<>();
+            // Save each person with a team number, not a whole FootballTeam object.
             for (FootballTeam t : league.getTeams()) {
-                teamLines.add(join(t.getRegistrationNo(), t.getName(), t.getParish(), t.getStatus().name()));
+                teamLines.add(join(t.getRegistrationNo(), t.getName(), t.getParish(), t.getStatus()));
                 for (Player p : t.getPlayers())
                     playerLines.add(join(p.getId(), p.getName(), String.valueOf(p.getAge()), p.getGender(),
                             t.getRegistrationNo(), p.getPosition(), String.valueOf(p.getJerseyNumber()),
-                            String.valueOf(p.getGoals()), p.getPlayerStatus().name()));
+                            String.valueOf(p.getGoals()), p.getPlayerStatus()));
                 for (Coach k : t.getCoaches())
                     coachLines.add(join(k.getId(), k.getName(), String.valueOf(k.getAge()), k.getGender(),
                             t.getRegistrationNo(), k.getQualification(), k.getCoachingRole()));
@@ -106,6 +108,7 @@ public class FileStorage {
 
             List<String> fixtureLines = new ArrayList<>();
             List<String> assignLines = new ArrayList<>();
+            // Fixtures store team/stadium IDs; official assignments get their own file.
             for (Fixture f : league.getFixtures()) {
                 MatchResult r = f.getResult();
                 fixtureLines.add(join(f.getFixtureId(), f.getHomeTeam().getRegistrationNo(),
@@ -138,6 +141,7 @@ public class FileStorage {
             lines = new ArrayList<>();
             for (Receipt r : app.getShop().getSales()) {
                 StringBuilder items = new StringBuilder();
+                // A receipt row keeps all purchased items in one semicolon-separated field.
                 for (Receipt.Line l : r.getLines()) {
                     if (items.length() > 0) items.append(';');
                     items.append(l.getProductId()).append(':').append(l.getQuantity()).append(':').append(l.getUnitPrice());
@@ -153,6 +157,7 @@ public class FileStorage {
     public AppData load() {
         if (!hasSavedData()) throw new ValidationException("No saved data found in " + dir.toAbsolutePath() + ".");
         try {
+            // Build a fresh object graph; load parents before records that refer to them.
             AppData app = new AppData();
             FootballLeague league = app.getLeague();
 
@@ -161,15 +166,17 @@ public class FileStorage {
             if (league.getCommissioner() != null)
                 for (String[] p : readLines("preparation.txt", 1)) league.getCommissioner().recordDecision(p[0]);
 
+            // Teams must exist before saved players and coaches can be assigned.
             for (String[] p : readLines("teams.txt", 4)) {
                 FootballTeam t = new FootballTeam(p[0], p[1], p[2]);
-                t.setStatus(FootballTeam.Status.valueOf(p[3]));
                 league.registerTeam(t);
+                // Restore the saved status after normal PENDING registration.
+                t.setStatus(p[3]);
             }
             for (String[] p : readLines("players.txt", 9)) {
                 Player pl = new Player(p[0], p[1], Integer.parseInt(p[2]), p[3], p[5], Integer.parseInt(p[6]));
                 pl.setGoals(Integer.parseInt(p[7]));
-                pl.setPlayerStatus(Player.PlayerStatus.valueOf(p[8]));
+                pl.setPlayerStatus(p[8]);
                 league.addPlayer(p[4], pl);
             }
             for (String[] p : readLines("coaches.txt", 7))
@@ -184,6 +191,7 @@ public class FileStorage {
                 league.registerOfficial(o);
             }
 
+            // A fixture needs its teams and stadium; a completed one also needs its result.
             for (String[] p : readLines("fixtures.txt", 8)) {
                 Fixture f = new Fixture(p[0], league.findTeam(p[1]), league.findTeam(p[2]),
                         league.findStadium(p[3]), LocalDateTime.parse(p[4]));
@@ -211,6 +219,7 @@ public class FileStorage {
             }
             for (String[] p : readLines("sales.txt", 4)) {
                 List<Receipt.Line> lines = new ArrayList<>();
+                // Rebuild receipt lines using each product's saved quantity and price.
                 for (String item : p[3].split(";")) {
                     String[] f = item.split(":");
                     Product prod = shop.findProduct(f[0]);
@@ -238,6 +247,7 @@ public class FileStorage {
         if (!Files.exists(file)) return rows;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             if (line.trim().isEmpty()) continue;
+            // -1 keeps empty columns, such as missing scores for an upcoming fixture.
             String[] parts = line.split("\\|", -1);
             if (parts.length != fieldCount)
                 throw new ValidationException(fileName + " has a malformed line: " + line);

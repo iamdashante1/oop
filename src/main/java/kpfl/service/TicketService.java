@@ -44,9 +44,11 @@ public class TicketService {
         if (fixture.getStatus() == Fixture.Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " has already been played.");
         int capacity = fixture.getStadium().getCapacity();
+        // Only SOLD tickets occupy seats; a cancelled ticket frees its seat.
         if (ticketsSold(fixtureId) >= capacity)
             throw new ValidationException("Sold out: " + fixture.getStadium().getName() + " holds " + capacity + ".");
         double price = Money.round2(fixture.getStadium().getTicketPrice() * category.getPriceMultiplier());
+        // The stadium sets the base price; the category supplies the multiplier.
         Ticket t = new Ticket(nextTicketId(), fixture.getFixtureId(), spectator.getId(), category, price);
         tickets.add(t);
         spectator.addTicketId(t.getTicketId());
@@ -73,6 +75,7 @@ public class TicketService {
 
     public int ticketsSold(String fixtureId) {
         int n = 0;
+        // Ignore cancelled tickets so capacity can be reused.
         for (Ticket t : tickets) if (t.isSold() && t.getFixtureId().equals(fixtureId)) n++;
         return n;
     }
@@ -87,6 +90,7 @@ public class TicketService {
 
     private String nextTicketId() {
         int n = tickets.size() + 1;
+        // Scan existing IDs because reloaded data may contain gaps.
         while (true) {
             String id = String.format("TK%04d", n);
             boolean used = false;

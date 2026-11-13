@@ -45,6 +45,7 @@ public class Fixture {
     public List<MatchOfficial> getOfficials() { return Collections.unmodifiableList(officials); }
 
     public boolean involves(FootballTeam team) {
+        // Compare stable registration numbers instead of object references.
         String no = team.getRegistrationNo();
         return homeTeam.getRegistrationNo().equals(no) || awayTeam.getRegistrationNo().equals(no);
     }
@@ -66,6 +67,7 @@ public class Fixture {
             throw new ValidationException("Result belongs to a different fixture.");
         if (status == Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " already has a result.");
+        // Only after every check passes do we change the stored result and status.
         this.result = result;
         this.status = Status.COMPLETED;
     }
