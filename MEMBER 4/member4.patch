@@ -1,0 +1,896 @@
+From 50dbdb676ba852587b393a715195e31c8b751eab Mon Sep 17 00:00:00 2001
+From: Member 4 <m4@example.com>
+Date: Tue, 24 Nov 2026 22:32:54 +0000
+Subject: [PATCH] Member 4: ticketing, stadium shop, receipts, tests and
+ documentation
+
+---
+ docs/member4-evidence.txt                     |  98 ++++++++++
+ docs/member4-module.md                        | 174 +++++++++++++++++
+ src/main/java/kpfl/model/FoodItem.java        |   2 +-
+ src/main/java/kpfl/model/Merchandise.java     |   2 +-
+ src/main/java/kpfl/model/Money.java           |   7 +-
+ src/main/java/kpfl/model/Product.java         |  23 ++-
+ src/main/java/kpfl/model/Receipt.java         |   7 +-
+ src/main/java/kpfl/model/Spectator.java       |  14 +-
+ src/main/java/kpfl/model/Ticket.java          |  26 ++-
+ src/main/java/kpfl/service/StadiumShop.java   |  20 +-
+ src/main/java/kpfl/service/TicketService.java |  21 +-
+ src/test/java/kpfl/Member4Tests.java          | 184 ++++++++++++++++++
+ 12 files changed, 543 insertions(+), 35 deletions(-)
+ create mode 100644 docs/member4-evidence.txt
+ create mode 100644 docs/member4-module.md
+ create mode 100644 src/test/java/kpfl/Member4Tests.java
+
+diff --git a/docs/member4-evidence.txt b/docs/member4-evidence.txt
+new file mode 100644
+index 0000000..42ce0e1
+--- /dev/null
++++ b/docs/member4-evidence.txt
+@@ -0,0 +1,98 @@
++KPFL Member 4 test evidence
++===========================
++
++Environment: Java 17+ source compilation using javac.
++Command: java -cp out kpfl.Member4Tests
++
++PASS  2-seat stadium sells exactly 2 tickets
++PASS  third ticket rejected (sold out)
++PASS  capacity is per fixture (F2 unaffected)
++PASS  spectator records ticket IDs
++PASS  GENERAL costs the stadium base price
++PASS  VIP costs double
++PASS  ticket revenue adds up
++PASS  cancelled ticket stops counting
++PASS  cancelling frees a seat
++PASS  cancelling twice rejected
++PASS  unknown ticket rejected
++PASS  unknown fixture rejected
++PASS  unknown spectator rejected
++PASS  missing category rejected
++PASS  duplicate spectator ID rejected
++PASS  negative ticket price rejected
++PASS  no tickets for a completed fixture
++PASS  multi-item total correct (1150 + 2x300)
++PASS  change = payment - total
++PASS  stock reduced after sale
++PASS  shop revenue tracked
++PASS  restock adds stock
++PASS  exact payment accepted
++PASS  insufficient payment rejected
++PASS  failed payment leaves stock unchanged
++PASS  negative quantity rejected
++PASS  zero quantity rejected
++PASS  exhausted stock rejected
++PASS  unknown product rejected
++PASS  empty basket rejected
++PASS  one bad item cancels the whole sale
++PASS  duplicate product ID rejected
++PASS  negative stock rejected
++PASS  negative price rejected
++PASS  bad restock rejected
++PASS  J$1,150 -> pre-tax 1000 + GCT 150
++PASS  GCT never added on top
++PASS  Money.gctIncluded(8740) = 1140
++PASS  receipt shows GCT, total, paid and change
++PASS  Product reference calls subclass getType()
++PASS  Spectator role through Person reference
++
++41 passed, 0 failed
++
++--------------------------------------------------------------
++Sample inventory, rejected sales, printed receipt and sales records (SampleData)
++--------------------------------------------------------------
++== Inventory ==
++M001 | Merchandise (size M): Lions Jersey | J$6,900.00 | stock 19
++M002 | Merchandise (size One size): Team Flag | J$1,500.00 | stock 50
++F001 | Food: Jerk Chicken Box | J$1,150.00 | stock 98
++B001 | Beverage: Bottled Water | J$250.00 | stock 200
++
++== Rejected sale: insufficient payment ==
++Error: Insufficient payment: total is J$3,000.00 but only J$1,000.00 was paid.
++
++== Rejected sale: negative quantity ==
++Error: Quantity for Team Flag must be positive.
++
++== Valid sale: receipt ==
++---------- KPFL STADIUM SHOP ----------
++Receipt R0002  2026-11-24 22:32
++Team Flag               2 x J$1,500.00 =   J$3,000.00
++Bottled Water           3 x   J$250.00 =     J$750.00
++Subtotal (before GCT)                    J$3,260.87
++GCT 15% (included)                         J$489.13
++TOTAL                                    J$3,750.00
++Paid                                     J$5,000.00
++Change                                   J$1,250.00
++---------------------------------------
++
++== Tickets for F003 (capacity 35,000) ==
++TK0001 | fixture F003 | GENERAL | J$1,500.00 | SOLD
++TK0002 | fixture F003 | VIP | J$3,000.00 | SOLD
++
++== spectators.txt ==
++SP001|Tanya Morgan|29|F
++SP002|Omar Francis|33|M
++
++== tickets.txt ==
++TK0001|F003|SP001|GENERAL|1500.0|SOLD
++TK0002|F003|SP002|VIP|3000.0|SOLD
++
++== products.txt ==
++M|M001|Lions Jersey|19|6900.0|M
++M|M002|Team Flag|48|1500.0|One size
++F|F001|Jerk Chicken Box|98|1150.0|false
++F|B001|Bottled Water|197|250.0|true
++
++== sales.txt ==
++R0001|2026-11-24T22:32:20.370757405|10000.0|M001:1:6900.0;F001:2:1150.0
++R0002|2026-11-24T22:32:20.399249144|5000.0|M002:2:1500.0;B001:3:250.0
+diff --git a/docs/member4-module.md b/docs/member4-module.md
+new file mode 100644
+index 0000000..aa18abc
+--- /dev/null
++++ b/docs/member4-module.md
+@@ -0,0 +1,174 @@
++# Member 4: Ticketing, Stadium Shop & Payment
++
++All classes are in `src/main/java/kpfl/`. `model` holds the data classes and `service` holds the classes that run the sales.
++
++| Class | Package | Purpose |
++|---|---|---|
++| `Spectator` | model | Extends `Person`. A match-day buyer. Keeps the IDs of the tickets bought. `getRole()` returns `"Spectator"`. |
++| `Ticket` | model | One ticket: ticket ID, fixture ID, spectator ID, category (`GENERAL` or `VIP`), tax-inclusive price and status (`SOLD` or `CANCELLED`). |
++| `Product` | model | Abstract parent of everything the shop sells: product ID, name, stock and tax-inclusive unit price. |
++| `Merchandise` | model | Extends `Product`. Jerseys, flags and similar items, with an optional size. |
++| `FoodItem` | model | Extends `Product`. Food and beverages. |
++| `Receipt` | model | A completed shop sale with its lines, totals, payment, change and printable text. |
++| `Money` | model | Rounding, GCT extraction and `J$` formatting. |
++| `TicketService` | service | Holds spectators and tickets. Sells and cancels tickets and counts tickets sold per fixture. |
++| `StadiumShop` | service | Holds the inventory. Completes multi-item sales, deducts stock and keeps the sales list. |
++
++## Product inheritance (second inheritance hierarchy)
++
++`Product` is abstract, so no one can create a plain `Product`. It holds what every item has in common (ID, name, stock, price) and the stock rules (`addStock`, `removeStock`). It declares two abstract methods that each child must supply:
++
++* `getType()` says what kind of product it is.
++* `getExtra()` gives the one extra value that is saved to file.
++
++| Class | `getType()` | `getExtra()` |
++|---|---|---|
++| `Merchandise` | `"Merchandise (size L)"`, or `"Merchandise"` when there is no size | the size |
++| `FoodItem` | `"Food"` or `"Beverage"` | `true` for a drink, `false` for food |
++
++**Polymorphism:** the shop stores everything as `Product`. When code calls `product.getType()` on a `Product` variable, Java runs the child's version, so a jersey, a jerk chicken box and a bottle of water each describe themselves correctly without any `if` checks.
++
++```java
++for (Product p : shop.getInventory()) {
++    System.out.println(p.getType() + " -> " + p.getName());
++}
++```
++
++`Spectator` follows the shared Person contract: it calls `super(id, name, age, gender)` and overrides `getRole()`.
++
++## Business rules
++
++* **Capacity:** tickets are counted per fixture, not per stadium. A sale is rejected when the number of `SOLD` tickets for that fixture reaches the stadium capacity. Cancelling a ticket frees its seat.
++* **Ticket price:** the stadium's base ticket price is multiplied by the category (`GENERAL` = 1x, `VIP` = 2x). A ticket cannot be sold for a fixture that has already been played.
++* **GCT:** all prices already include 15% GCT, so GCT is taken out of the total and never added on top: GCT = total x 15/115. A J$1,150 total gives J$1,000 before GCT and J$150 GCT.
++* **Shop sale:** a basket may hold several items. Quantities must be positive and in stock, and the payment must cover the total. Everything is checked first and stock is only deducted when the whole sale is valid, so a failed sale changes nothing.
++
++## Sales-record format (saved by `FileStorage` in `data/`)
++
++One record per line, fields separated by `|`. Links are saved as IDs and rebuilt on load.
++
++| File | Columns | Example |
++|---|---|---|
++| `spectators.txt` | `id\|name\|age\|gender` | `SP001\|Tanya Morgan\|29\|F` |
++| `tickets.txt` | `ticketId\|fixtureId\|spectatorId\|category\|price\|status` | `TK0002\|F003\|SP002\|VIP\|3000.0\|SOLD` |
++| `products.txt` | `kind(M/F)\|id\|name\|stock\|unitPrice\|extra` | `F\|B001\|Bottled Water\|197\|250.0\|true` |
++| `sales.txt` | `receiptId\|dateTime\|payment\|productId:qty:unitPrice;...` | `R0002\|2026-11-24T22:32:20\|5000.0\|M002:2:1500.0;B001:3:250.0` |
++
++## Sample receipt
++
++```
++---------- KPFL STADIUM SHOP ----------
++Receipt R0002  2026-11-24 22:32
++Team Flag               2 x J$1,500.00 =   J$3,000.00
++Bottled Water           3 x   J$250.00 =     J$750.00
++Subtotal (before GCT)                    J$3,260.87
++GCT 15% (included)                         J$489.13
++TOTAL                                    J$3,750.00
++Paid                                     J$5,000.00
++Change                                   J$1,250.00
++---------------------------------------
++```
++
++## UML (Member 4 classes)
++
++```mermaid
++classDiagram
++    class Person {
++      <<abstract>>
++      +getRole() String
++    }
++    class Spectator {
++      -List~String~ ticketIds
++      +addTicketId(String) void
++    }
++    class Ticket {
++      -String ticketId
++      -String fixtureId
++      -String spectatorId
++      -Category category
++      -double price
++      -Status status
++      +isSold() boolean
++    }
++    class Product {
++      <<abstract>>
++      -String productId
++      -String name
++      -int stock
++      -double unitPrice
++      +addStock(int) void
++      +removeStock(int) void
++      +getType() String
++      +getExtra() String
++    }
++    class Merchandise
++    class FoodItem
++    class Receipt {
++      -String receiptId
++      -double total
++      -double payment
++      +getGct() double
++      +getChange() double
++      +format() String
++    }
++    class Line {
++      -String productId
++      -int quantity
++      -double unitPrice
++      +getLineTotal() double
++    }
++    class TicketService {
++      +sellTicket(...) Ticket
++      +cancelTicket(String) void
++      +ticketsSold(String) int
++    }
++    class StadiumShop {
++      +addProduct(Product) void
++      +checkout(Map, double) Receipt
++      +restock(String, int) void
++    }
++    Person <|-- Spectator
++    Product <|-- Merchandise
++    Product <|-- FoodItem
++    TicketService "1" o-- "0..*" Spectator : registers
++    TicketService "1" o-- "0..*" Ticket : sells
++    Ticket "0..*" ..> "1" Spectator : spectator ID
++    StadiumShop "1" o-- "0..*" Product : inventory
++    StadiumShop "1" o-- "0..*" Receipt : sales
++    Receipt "1" *-- "1..*" Line : lines
++```
++
++## Tests
++
++`src/test/java/kpfl/Member4Tests.java` has 41 checks. The test output is in `docs/member4-evidence.txt`.
++
++Compile the project, then run:
++
++```bash
++javac -d out -encoding UTF-8 $(find src/main -name "*.java")
++javac -d out -cp out src/test/java/kpfl/Member4Tests.java
++java -cp out kpfl.Member4Tests
++```
++
++| Required test | Result |
++|---|---|
++| A stadium with 2 seats accepts exactly 2 ticket sales and rejects the third | PASS |
++| Capacity is counted per fixture (another fixture is unaffected) | PASS |
++| VIP costs double; cancelling a ticket frees a seat | PASS |
++| Valid shop payment succeeds and change is correct | PASS |
++| Insufficient payment is rejected and stock is unchanged | PASS |
++| Negative and zero quantities are rejected | PASS |
++| Exhausted stock is rejected; one bad item cancels the whole sale | PASS |
++| Stock reduces correctly after a sale; restock adds stock | PASS |
++| GCT: J$1,150 gives J$1,000 + J$150 (not added twice) | PASS |
++| `Product` reference calls the child's `getType()` | PASS |
++
++## Weekly contribution log (Member 4)
++
++| Week | Planned in the team plan | What I did / evidence |
++|---|---|---|
++| 1 | Agree the design, IDs and `Person` contract | _(to fill in)_ |
++| 2 | `Product` hierarchy and sample inventory | _(to fill in)_ |
++| 3 | Ticket model and sample records | _(to fill in)_ |
++| 4 | Ticketing, shop and receipts | _(to fill in)_ |
++| 5 | Integration, tests, demo | _(to fill in)_ |
+diff --git a/src/main/java/kpfl/model/FoodItem.java b/src/main/java/kpfl/model/FoodItem.java
+index ed73315..dd24780 100755
+--- a/src/main/java/kpfl/model/FoodItem.java
++++ b/src/main/java/kpfl/model/FoodItem.java
+@@ -2,7 +2,7 @@ package kpfl.model;
+ 
+ /** Food and beverages. */
+ public class FoodItem extends Product {
+-    private final boolean beverage;
++    private final boolean beverage; // true = drink, false = food
+ 
+     public FoodItem(String id, String name, int stock, double unitPrice, boolean beverage) {
+         super(id, name, stock, unitPrice);
+diff --git a/src/main/java/kpfl/model/Merchandise.java b/src/main/java/kpfl/model/Merchandise.java
+index 0ae2d68..6af47f2 100755
+--- a/src/main/java/kpfl/model/Merchandise.java
++++ b/src/main/java/kpfl/model/Merchandise.java
+@@ -2,7 +2,7 @@ package kpfl.model;
+ 
+ /** Jerseys, flags and other club merchandise. */
+ public class Merchandise extends Product {
+-    private final String size;
++    private final String size; // empty when the item has no size (e.g. a flag)
+ 
+     public Merchandise(String id, String name, int stock, double unitPrice, String size) {
+         super(id, name, stock, unitPrice);
+diff --git a/src/main/java/kpfl/model/Money.java b/src/main/java/kpfl/model/Money.java
+index ff5cf6b..bf5e55a 100755
+--- a/src/main/java/kpfl/model/Money.java
++++ b/src/main/java/kpfl/model/Money.java
+@@ -4,14 +4,15 @@ package kpfl.model;
+ public final class Money {
+     public static final double GCT_RATE = 0.15;
+ 
+-    private Money() { }
++    private Money() { } // utility class: nobody should create one
+ 
++    // Round to cents so totals like 1149.999999 print as 1150.00
+     public static double round2(double v) { return Math.round(v * 100.0) / 100.0; }
+ 
+-    // The price already includes GCT. Divide by 1.15 to find the pre-tax part;
+-    // total * 0.15 / 1.15 gives only the GCT already inside that price.
++    // Prices already include GCT, so we EXTRACT the tax: total x 0.15 / 1.15 (never total x 0.15)
+     public static double gctIncluded(double total) { return round2(total * GCT_RATE / (1 + GCT_RATE)); }
+ 
++    // What the total was before tax
+     public static double preTax(double total) { return round2(total - gctIncluded(total)); }
+ 
+     public static String format(double v) { return String.format("J$%,.2f", v); }
+diff --git a/src/main/java/kpfl/model/Product.java b/src/main/java/kpfl/model/Product.java
+index c0b57bf..edf0007 100755
+--- a/src/main/java/kpfl/model/Product.java
++++ b/src/main/java/kpfl/model/Product.java
+@@ -2,18 +2,19 @@ package kpfl.model;
+ 
+ import kpfl.exception.ValidationException;
+ 
+-/** Something the stadium shop sells. Unit price is tax-inclusive. */
++/** Something the stadium shop sells. Unit price is tax-inclusive. Parent of Merchandise and FoodItem. */
+ public abstract class Product {
+-    private final String productId;
++    private final String productId; // fixed after creation, used for lookups and saving
+     private String name;
+     private int stock;
+     private double unitPrice;
+ 
+     protected Product(String productId, String name, int stock, double unitPrice) {
++        // Reject blank IDs/names, negative stock and negative (or non-finite) prices
+         if (productId == null || productId.trim().isEmpty()) throw new ValidationException("Product ID is required.");
+         if (name == null || name.trim().isEmpty()) throw new ValidationException("Product name is required.");
+         if (stock < 0) throw new ValidationException("Stock cannot be negative.");
+-        if (unitPrice < 0) throw new ValidationException("Price cannot be negative.");
++        if (!Double.isFinite(unitPrice) || unitPrice < 0) throw new ValidationException("Price cannot be negative.");
+         this.productId = productId.trim();
+         this.name = name.trim();
+         this.stock = stock;
+@@ -25,21 +26,33 @@ public abstract class Product {
+     public int getStock() { return stock; }
+     public double getUnitPrice() { return unitPrice; }
+ 
++    public void setName(String name) {
++        if (name == null || name.trim().isEmpty()) throw new ValidationException("Product name is required.");
++        this.name = name.trim();
++    }
++
++    public void setUnitPrice(double unitPrice) {
++        if (!Double.isFinite(unitPrice) || unitPrice < 0) throw new ValidationException("Price cannot be negative.");
++        this.unitPrice = unitPrice;
++    }
++
++    // Restocking: quantity must be positive
+     public void addStock(int qty) {
+         if (qty <= 0) throw new ValidationException("Restock quantity must be positive.");
+         stock += qty;
+     }
+ 
++    // Used by StadiumShop after a valid sale; blocks overselling
+     public void removeStock(int qty) {
+         if (qty <= 0) throw new ValidationException("Quantity must be positive.");
+         if (qty > stock) throw new ValidationException("Not enough " + name + " in stock (have " + stock + ").");
+         stock -= qty;
+     }
+ 
+-    /** Overridden by subclasses: what kind of product this is. */
++    /** Overridden by subclasses: what kind of product this is (polymorphism). */
+     public abstract String getType();
+ 
+-    /** Value saved in the last column of the products file. */
++    /** Value saved in the last column of the products file (size for merchandise, true/false for food). */
+     public abstract String getExtra();
+ 
+     @Override
+diff --git a/src/main/java/kpfl/model/Receipt.java b/src/main/java/kpfl/model/Receipt.java
+index 8c3abaf..5828bd0 100755
+--- a/src/main/java/kpfl/model/Receipt.java
++++ b/src/main/java/kpfl/model/Receipt.java
+@@ -8,6 +8,7 @@ import java.util.List;
+ 
+ /** A completed shop sale. Totals include 15% GCT; the GCT part is total x 15/115. */
+ public class Receipt {
++    /** One product line on the receipt. The name and price are copied so later edits cannot change a receipt. */
+     public static class Line {
+         private final String productId;
+         private final String name;
+@@ -37,7 +38,7 @@ public class Receipt {
+     public Receipt(String receiptId, LocalDateTime time, List<Line> lines, double payment) {
+         this.receiptId = receiptId;
+         this.time = time;
+-        // Copy the basket so later changes to it cannot change an issued receipt.
++        // Copy the basket so later changes to it cannot change an issued receipt
+         this.lines = new ArrayList<>(lines);
+         double sum = 0;
+         for (Line l : lines) sum += l.getLineTotal();
+@@ -51,12 +52,12 @@ public class Receipt {
+     public double getTotal() { return total; }
+     public double getPayment() { return payment; }
+     public double getChange() { return Money.round2(payment - total); }
+-    // GCT is extracted from the tax-inclusive total, not added to it again.
++    // GCT is extracted from the tax-inclusive total, not added on top of it
+     public double getGct() { return Money.gctIncluded(total); }
+     public double getSubtotal() { return Money.preTax(total); }
+ 
++    // Builds the printable receipt text
+     public String format() {
+-        // StringBuilder collects the receipt lines before we print the finished text.
+         StringBuilder sb = new StringBuilder();
+         sb.append("---------- KPFL STADIUM SHOP ----------\n");
+         sb.append("Receipt ").append(receiptId).append("  ")
+diff --git a/src/main/java/kpfl/model/Spectator.java b/src/main/java/kpfl/model/Spectator.java
+index 7ecc9d5..ffcdcfc 100755
+--- a/src/main/java/kpfl/model/Spectator.java
++++ b/src/main/java/kpfl/model/Spectator.java
+@@ -4,17 +4,23 @@ import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.List;
+ 
+-/** A match-day buyer. Keeps the IDs of the tickets bought. */
++/** A match-day buyer. Extends Person and keeps the IDs (not objects) of the tickets bought. */
+ public class Spectator extends Person {
++    // IDs are stored so the file storage can rebuild the link when data is reloaded
+     private final List<String> ticketIds = new ArrayList<>();
+ 
+     public Spectator(String id, String name, int age, String gender) {
+-        super(id, name, age, gender);
++        super(id, name, age, gender); // Person validates the shared details
+     }
+ 
+     @Override
+-    public String getRole() { return "Spectator"; }
++    public String getRole() { return "Spectator"; } // overrides Person.getRole() (polymorphism)
+ 
+-    public void addTicketId(String ticketId) { ticketIds.add(ticketId); }
++    // Called by TicketService when a ticket is sold or reloaded; ignores an ID that is already listed
++    public void addTicketId(String ticketId) {
++        if (ticketId != null && !ticketIds.contains(ticketId)) ticketIds.add(ticketId);
++    }
++
++    // Read-only view so outside code cannot edit the list directly
+     public List<String> getTicketIds() { return Collections.unmodifiableList(ticketIds); }
+ }
+diff --git a/src/main/java/kpfl/model/Ticket.java b/src/main/java/kpfl/model/Ticket.java
+index c0c11fd..ec65a74 100755
+--- a/src/main/java/kpfl/model/Ticket.java
++++ b/src/main/java/kpfl/model/Ticket.java
+@@ -4,6 +4,7 @@ import kpfl.exception.ValidationException;
+ 
+ /** One ticket for one fixture. The price is tax-inclusive (15% GCT included). */
+ public class Ticket {
++    // Each category carries its price multiplier: VIP costs double the stadium's base price
+     public enum Category {
+         GENERAL(1.0), VIP(2.0);
+ 
+@@ -14,8 +15,10 @@ public class Ticket {
+         public double getPriceMultiplier() { return priceMultiplier; }
+     }
+ 
++    // A cancelled ticket stops counting against the stadium capacity
+     public enum Status { SOLD, CANCELLED }
+ 
++    // Fixture and spectator are stored by ID, matching how the project saves relationships
+     private final String ticketId;
+     private final String fixtureId;
+     private final String spectatorId;
+@@ -24,21 +27,34 @@ public class Ticket {
+     private Status status = Status.SOLD;
+ 
+     public Ticket(String ticketId, String fixtureId, String spectatorId, Category category, double price) {
+-        if (price < 0) throw new ValidationException("Ticket price cannot be negative.");
+-        this.ticketId = ticketId;
+-        this.fixtureId = fixtureId;
+-        this.spectatorId = spectatorId;
++        // Validate everything so a bad ticket can never exist
++        if (isBlank(ticketId)) throw new ValidationException("Ticket ID is required.");
++        if (isBlank(fixtureId)) throw new ValidationException("Fixture ID is required.");
++        if (isBlank(spectatorId)) throw new ValidationException("Spectator ID is required.");
++        if (category == null) throw new ValidationException("Ticket category is required.");
++        if (!Double.isFinite(price) || price < 0) throw new ValidationException("Ticket price cannot be negative.");
++        this.ticketId = ticketId.trim();
++        this.fixtureId = fixtureId.trim();
++        this.spectatorId = spectatorId.trim();
+         this.category = category;
+         this.price = price;
+     }
+ 
++    private static boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
++
+     public String getTicketId() { return ticketId; }
+     public String getFixtureId() { return fixtureId; }
+     public String getSpectatorId() { return spectatorId; }
+     public Category getCategory() { return category; }
+     public double getPrice() { return price; }
+     public Status getStatus() { return status; }
+-    public void setStatus(Status status) { this.status = status; }
++
++    // Used by TicketService.cancelTicket and when reloading saved tickets
++    public void setStatus(Status status) {
++        if (status == null) throw new ValidationException("Ticket status is required.");
++        this.status = status;
++    }
++
+     public boolean isSold() { return status == Status.SOLD; }
+ 
+     @Override
+diff --git a/src/main/java/kpfl/service/StadiumShop.java b/src/main/java/kpfl/service/StadiumShop.java
+index 10ed706..aa18549 100755
+--- a/src/main/java/kpfl/service/StadiumShop.java
++++ b/src/main/java/kpfl/service/StadiumShop.java
+@@ -14,9 +14,12 @@ import java.util.Map;
+ 
+ /** Stadium shop: inventory, multi-item sales, payment checks and receipts. All prices include 15% GCT. */
+ public class StadiumShop {
++    // LinkedHashMap keeps products in the order they were added
+     private final Map<String, Product> inventory = new LinkedHashMap<>();
+     private final List<Receipt> sales = new ArrayList<>();
+ 
++    // ---- Inventory ----
++
+     public void addProduct(Product p) {
+         if (p == null) throw new ValidationException("Product is required.");
+         if (inventory.containsKey(p.getProductId()))
+@@ -36,14 +39,17 @@ public class StadiumShop {
+ 
+     public List<Product> getInventory() { return new ArrayList<>(inventory.values()); }
+ 
++    // ---- Sales ----
++
+     /**
+      * Completes a sale of several items (productId to quantity). Everything is checked before any stock is
+      * removed, so a failed sale changes nothing.
+      */
+     public Receipt checkout(Map<String, Integer> basket, double payment) {
+         if (basket == null || basket.isEmpty()) throw new ValidationException("The basket is empty.");
++        if (!Double.isFinite(payment)) throw new ValidationException("Payment must be a valid amount.");
+         List<Receipt.Line> lines = new ArrayList<>();
+-        // First pass: validate every item and prepare receipt lines without changing stock.
++        // First pass: validate every item and prepare receipt lines without changing any stock
+         for (Map.Entry<String, Integer> e : basket.entrySet()) {
+             Product p = findProduct(e.getKey());
+             int qty = e.getValue();
+@@ -53,21 +59,25 @@ public class StadiumShop {
+             lines.add(new Receipt.Line(p.getProductId(), p.getName(), qty, p.getUnitPrice()));
+         }
+         Receipt draft = new Receipt(nextReceiptId(), LocalDateTime.now(), lines, payment);
+-        // The total is known only after all valid items have been added.
++        // The total is only known once every valid item has been added
+         if (payment < draft.getTotal())
+             throw new ValidationException("Insufficient payment: total is " + Money.format(draft.getTotal())
+                     + " but only " + Money.format(payment) + " was paid.");
+-        // Second pass: commit stock changes only when the entire sale is valid.
++        // Second pass: take stock off the shelf only when the whole sale is valid
+         for (Receipt.Line l : lines) findProduct(l.getProductId()).removeStock(l.getQuantity());
+         sales.add(draft);
+         return draft;
+     }
+ 
+-    /** Used when reloading saved data. */
+-    public void restoreSale(Receipt r) { sales.add(r); }
++    /** Used by FileStorage when reloading saved sales (stock is already saved, so it is not reduced again). */
++    public void restoreSale(Receipt r) {
++        if (r == null) throw new ValidationException("Receipt is required.");
++        sales.add(r);
++    }
+ 
+     public List<Receipt> getSales() { return Collections.unmodifiableList(sales); }
+ 
++    // Total tax-inclusive shop revenue, used by the sales report
+     public double totalRevenue() {
+         double sum = 0;
+         for (Receipt r : sales) sum += r.getTotal();
+diff --git a/src/main/java/kpfl/service/TicketService.java b/src/main/java/kpfl/service/TicketService.java
+index 71f43f1..e93915c 100755
+--- a/src/main/java/kpfl/service/TicketService.java
++++ b/src/main/java/kpfl/service/TicketService.java
+@@ -14,7 +14,7 @@ import java.util.Map;
+ 
+ /** Spectators and ticket sales. Tickets sold are counted per fixture against that fixture's stadium capacity. */
+ public class TicketService {
+-    private final FootballLeague league;
++    private final FootballLeague league; // used to look up fixtures (and through them, stadium capacity/price)
+     private final Map<String, Spectator> spectators = new LinkedHashMap<>();
+     private final List<Ticket> tickets = new ArrayList<>();
+ 
+@@ -22,6 +22,8 @@ public class TicketService {
+         this.league = league;
+     }
+ 
++    // ---- Spectators ----
++
+     public void addSpectator(Spectator s) {
+         if (s == null) throw new ValidationException("Spectator is required.");
+         if (spectators.containsKey(s.getId())) throw new ValidationException("Spectator ID " + s.getId() + " already exists.");
+@@ -36,6 +38,8 @@ public class TicketService {
+ 
+     public List<Spectator> getSpectators() { return new ArrayList<>(spectators.values()); }
+ 
++    // ---- Tickets ----
++
+     /** Sells one ticket; rejected if the fixture is unknown/completed or the stadium is full. */
+     public Ticket sellTicket(String fixtureId, String spectatorId, Ticket.Category category) {
+         Fixture fixture = league.findFixture(fixtureId);
+@@ -43,12 +47,12 @@ public class TicketService {
+         if (category == null) throw new ValidationException("Ticket category is required.");
+         if (fixture.getStatus() == Fixture.Status.COMPLETED)
+             throw new ValidationException("Fixture " + fixtureId + " has already been played.");
++        // Main rule: tickets sold for THIS fixture cannot exceed the stadium capacity
+         int capacity = fixture.getStadium().getCapacity();
+-        // Only SOLD tickets occupy seats; a cancelled ticket frees its seat.
+-        if (ticketsSold(fixtureId) >= capacity)
++        if (ticketsSold(fixture.getFixtureId()) >= capacity)
+             throw new ValidationException("Sold out: " + fixture.getStadium().getName() + " holds " + capacity + ".");
++        // The stadium sets the base price; the category supplies the multiplier (VIP = 2x)
+         double price = Money.round2(fixture.getStadium().getTicketPrice() * category.getPriceMultiplier());
+-        // The stadium sets the base price; the category supplies the multiplier.
+         Ticket t = new Ticket(nextTicketId(), fixture.getFixtureId(), spectator.getId(), category, price);
+         tickets.add(t);
+         spectator.addTicketId(t.getTicketId());
+@@ -59,23 +63,24 @@ public class TicketService {
+         for (Ticket t : tickets) {
+             if (t.getTicketId().equals(ticketId)) {
+                 if (!t.isSold()) throw new ValidationException("Ticket " + ticketId + " is already cancelled.");
+-                t.setStatus(Ticket.Status.CANCELLED);
++                t.setStatus(Ticket.Status.CANCELLED); // frees the seat
+                 return;
+             }
+         }
+         throw new ValidationException("No ticket with ID " + ticketId + ".");
+     }
+ 
+-    /** Used when reloading saved data. */
++    /** Used by FileStorage when reloading saved tickets. */
+     public void restoreTicket(Ticket t) {
++        if (t == null) throw new ValidationException("Ticket is required.");
+         tickets.add(t);
+         Spectator s = spectators.get(t.getSpectatorId());
+         if (s != null) s.addTicketId(t.getTicketId());
+     }
+ 
++    // Counts only SOLD tickets, so cancelled tickets do not use up capacity
+     public int ticketsSold(String fixtureId) {
+         int n = 0;
+-        // Ignore cancelled tickets so capacity can be reused.
+         for (Ticket t : tickets) if (t.isSold() && t.getFixtureId().equals(fixtureId)) n++;
+         return n;
+     }
+@@ -88,9 +93,9 @@ public class TicketService {
+ 
+     public List<Ticket> getTickets() { return Collections.unmodifiableList(tickets); }
+ 
++    // Scans existing IDs so reloaded data with gaps can never produce a duplicate ID
+     private String nextTicketId() {
+         int n = tickets.size() + 1;
+-        // Scan existing IDs because reloaded data may contain gaps.
+         while (true) {
+             String id = String.format("TK%04d", n);
+             boolean used = false;
+diff --git a/src/test/java/kpfl/Member4Tests.java b/src/test/java/kpfl/Member4Tests.java
+new file mode 100644
+index 0000000..151db47
+--- /dev/null
++++ b/src/test/java/kpfl/Member4Tests.java
+@@ -0,0 +1,184 @@
++package kpfl;
++
++import kpfl.exception.ValidationException;
++import kpfl.model.FoodItem;
++import kpfl.model.Fixture;
++import kpfl.model.FootballTeam;
++import kpfl.model.LeagueCommissioner;
++import kpfl.model.Merchandise;
++import kpfl.model.Money;
++import kpfl.model.Person;
++import kpfl.model.Product;
++import kpfl.model.Receipt;
++import kpfl.model.Spectator;
++import kpfl.model.Stadium;
++import kpfl.model.Ticket;
++import kpfl.service.FootballLeague;
++import kpfl.service.StadiumShop;
++import kpfl.service.TicketService;
++
++import java.time.LocalDateTime;
++import java.util.LinkedHashMap;
++import java.util.Map;
++
++/** Tests for Member 4 (tickets and stadium shop). Run: java -cp out kpfl.Member4Tests */
++public class Member4Tests {
++    private static int passed, failed;
++
++    public static void main(String[] args) {
++        ticketCapacity();
++        ticketPricingAndCancel();
++        ticketValidation();
++        shopSales();
++        shopRejections();
++        gctAndReceipt();
++        polymorphism();
++        System.out.println("\n" + passed + " passed, " + failed + " failed");
++        if (failed > 0) System.exit(1);
++    }
++
++    // A league with two teams, a 2-seat stadium (base price J$1,000) and fixture F1
++    private static FootballLeague league() {
++        FootballLeague l = new FootballLeague();
++        l.setCommissioner(new LeagueCommissioner("C1", "Comm", 40, "F"));
++        for (String id : new String[] {"A", "B", "C"}) {
++            l.registerTeam(new FootballTeam(id, "Team " + id, "Kingston"));
++            l.approveTeam(id);
++        }
++        l.addStadium(new Stadium("S1", "Small Ground", "Kingston", 2, 1000, "Good"));
++        l.addStadium(new Stadium("S2", "Big Ground", "Portmore", 500, 800, "Good"));
++        LocalDateTime t = LocalDateTime.of(2026, 12, 1, 15, 0);
++        l.addFixture(new Fixture("F1", l.findTeam("A"), l.findTeam("B"), l.findStadium("S1"), t));
++        l.addFixture(new Fixture("F2", l.findTeam("C"), l.findTeam("A"), l.findStadium("S2"), t.plusDays(7)));
++        return l;
++    }
++
++    private static TicketService office(FootballLeague l) {
++        TicketService ts = new TicketService(l);
++        ts.addSpectator(new Spectator("SP1", "One", 20, "M"));
++        ts.addSpectator(new Spectator("SP2", "Two", 21, "F"));
++        ts.addSpectator(new Spectator("SP3", "Three", 22, "M"));
++        return ts;
++    }
++
++    private static void ticketCapacity() {
++        FootballLeague l = league();
++        TicketService ts = office(l);
++        ts.sellTicket("F1", "SP1", Ticket.Category.GENERAL);
++        ts.sellTicket("F1", "SP2", Ticket.Category.GENERAL);
++        check("2-seat stadium sells exactly 2 tickets", ts.ticketsSold("F1") == 2);
++        check("third ticket rejected (sold out)", throwsValidation(() -> ts.sellTicket("F1", "SP3", Ticket.Category.GENERAL)));
++        check("capacity is per fixture (F2 unaffected)", !throwsValidation(() -> ts.sellTicket("F2", "SP3", Ticket.Category.GENERAL)));
++        check("spectator records ticket IDs", ts.findSpectator("SP1").getTicketIds().size() == 1);
++    }
++
++    private static void ticketPricingAndCancel() {
++        FootballLeague l = league();
++        TicketService ts = office(l);
++        Ticket general = ts.sellTicket("F1", "SP1", Ticket.Category.GENERAL);
++        Ticket vip = ts.sellTicket("F1", "SP2", Ticket.Category.VIP);
++        check("GENERAL costs the stadium base price", general.getPrice() == 1000.0);
++        check("VIP costs double", vip.getPrice() == 2000.0);
++        check("ticket revenue adds up", ts.ticketRevenue("F1") == 3000.0);
++        ts.cancelTicket(vip.getTicketId());
++        check("cancelled ticket stops counting", ts.ticketsSold("F1") == 1 && ts.ticketRevenue("F1") == 1000.0);
++        check("cancelling frees a seat", !throwsValidation(() -> ts.sellTicket("F1", "SP3", Ticket.Category.GENERAL)));
++        check("cancelling twice rejected", throwsValidation(() -> ts.cancelTicket(vip.getTicketId())));
++        check("unknown ticket rejected", throwsValidation(() -> ts.cancelTicket("NOPE")));
++    }
++
++    private static void ticketValidation() {
++        FootballLeague l = league();
++        TicketService ts = office(l);
++        check("unknown fixture rejected", throwsValidation(() -> ts.sellTicket("NOPE", "SP1", Ticket.Category.GENERAL)));
++        check("unknown spectator rejected", throwsValidation(() -> ts.sellTicket("F1", "NOPE", Ticket.Category.GENERAL)));
++        check("missing category rejected", throwsValidation(() -> ts.sellTicket("F1", "SP1", null)));
++        check("duplicate spectator ID rejected", throwsValidation(() -> ts.addSpectator(new Spectator("SP1", "Dup", 30, "M"))));
++        check("negative ticket price rejected", throwsValidation(() -> new Ticket("T", "F1", "SP1", Ticket.Category.VIP, -1)));
++        l.recordResult("F1", 1, 0);
++        check("no tickets for a completed fixture", throwsValidation(() -> ts.sellTicket("F1", "SP1", Ticket.Category.GENERAL)));
++    }
++
++    private static Map<String, Integer> basket(String id, int qty) {
++        Map<String, Integer> m = new LinkedHashMap<>();
++        m.put(id, qty);
++        return m;
++    }
++
++    private static StadiumShop shop() {
++        StadiumShop s = new StadiumShop();
++        s.addProduct(new Merchandise("M1", "Jersey", 5, 1150, "L"));
++        s.addProduct(new FoodItem("F1", "Patty", 10, 300, false));
++        s.addProduct(new FoodItem("B1", "Water", 20, 200, true));
++        return s;
++    }
++
++    private static void shopSales() {
++        StadiumShop s = shop();
++        Map<String, Integer> multi = new LinkedHashMap<>();
++        multi.put("M1", 1);
++        multi.put("F1", 2);
++        Receipt r = s.checkout(multi, 2000);
++        check("multi-item total correct (1150 + 2x300)", r.getTotal() == 1750.0);
++        check("change = payment - total", r.getChange() == 250.0);
++        check("stock reduced after sale", s.findProduct("M1").getStock() == 4 && s.findProduct("F1").getStock() == 8);
++        check("shop revenue tracked", s.totalRevenue() == 1750.0 && s.getSales().size() == 1);
++        s.restock("M1", 3);
++        check("restock adds stock", s.findProduct("M1").getStock() == 7);
++        check("exact payment accepted", !throwsValidation(() -> s.checkout(basket("B1", 1), 200)));
++    }
++
++    private static void shopRejections() {
++        StadiumShop s = shop();
++        check("insufficient payment rejected", throwsValidation(() -> s.checkout(basket("M1", 1), 1000)));
++        check("failed payment leaves stock unchanged", s.findProduct("M1").getStock() == 5 && s.getSales().isEmpty());
++        check("negative quantity rejected", throwsValidation(() -> s.checkout(basket("M1", -1), 5000)));
++        check("zero quantity rejected", throwsValidation(() -> s.checkout(basket("M1", 0), 5000)));
++        check("exhausted stock rejected", throwsValidation(() -> s.checkout(basket("M1", 6), 99999)));
++        check("unknown product rejected", throwsValidation(() -> s.checkout(basket("NOPE", 1), 5000)));
++        check("empty basket rejected", throwsValidation(() -> s.checkout(new LinkedHashMap<>(), 5000)));
++        Map<String, Integer> mixed = new LinkedHashMap<>();
++        mixed.put("F1", 1);
++        mixed.put("M1", 99); // second item is invalid
++        check("one bad item cancels the whole sale", throwsValidation(() -> s.checkout(mixed, 99999))
++                && s.findProduct("F1").getStock() == 10);
++        check("duplicate product ID rejected", throwsValidation(() -> s.addProduct(new FoodItem("F1", "Dup", 1, 1, false))));
++        check("negative stock rejected", throwsValidation(() -> new FoodItem("X", "Bad", -1, 10, false)));
++        check("negative price rejected", throwsValidation(() -> new FoodItem("X", "Bad", 1, -10, false)));
++        check("bad restock rejected", throwsValidation(() -> s.restock("M1", 0)));
++    }
++
++    private static void gctAndReceipt() {
++        StadiumShop s = shop();
++        Receipt r = s.checkout(basket("M1", 1), 2000);
++        check("J$1,150 -> pre-tax 1000 + GCT 150", r.getSubtotal() == 1000.0 && r.getGct() == 150.0);
++        check("GCT never added on top", r.getSubtotal() + r.getGct() == r.getTotal());
++        check("Money.gctIncluded(8740) = 1140", Money.gctIncluded(8740) == 1140.0);
++        String text = r.format();
++        check("receipt shows GCT, total, paid and change", text.contains("GCT 15% (included)") && text.contains("TOTAL")
++                && text.contains("Paid") && text.contains("Change"));
++    }
++
++    private static void polymorphism() {
++        StadiumShop s = shop();
++        Product jersey = s.findProduct("M1"), patty = s.findProduct("F1"), water = s.findProduct("B1");
++        check("Product reference calls subclass getType()", jersey.getType().startsWith("Merchandise")
++                && patty.getType().equals("Food") && water.getType().equals("Beverage"));
++        Person spectator = new Spectator("SP9", "Poly", 25, "F");
++        check("Spectator role through Person reference", spectator.getRole().equals("Spectator"));
++    }
++
++    private static boolean throwsValidation(Runnable r) {
++        try {
++            r.run();
++            return false;
++        } catch (ValidationException e) {
++            return true;
++        }
++    }
++
++    private static void check(String name, boolean ok) {
++        if (ok) passed++; else failed++;
++        System.out.println((ok ? "PASS  " : "FAIL  ") + name);
++    }
++}
+-- 
+2.43.0
+
