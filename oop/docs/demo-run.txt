@@ -1,0 +1,119 @@
+﻿Loaded 0 match result(s).
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: Please enter a whole number.
+Choose an option: Please enter a whole number.
+Choose an option: Please choose a number from 1 to 10.
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: Fixtures awaiting a result:
+  None. Fixtures are added through the fixture management section.
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: === League Standings ===
+Pos  Team                     P   W   D   L   GF   GA   GD  Pts
+No teams registered.
+
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: 1. Standings  2. Upcoming fixtures  3. Completed fixtures  4. All fixtures  5. Sales summary
+Choose a report: === League Standings ===
+Pos  Team                     P   W   D   L   GF   GA   GD  Pts
+No teams registered.
+
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: 1. Standings  2. Upcoming fixtures  3. Completed fixtures  4. All fixtures  5. Sales summary
+Choose a report: === Ticket and Shop Sales Summary ===
+Sales data is not available (Member 4's sales module is not connected).
+
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: Saved 0 match result(s).
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: Loaded 0 match result(s).
+
+===== KPFL - Kingston Premier Football League =====
+ 1. Team management
+ 2. Stadium management
+ 3. Fixture management
+ 4. Match results
+ 5. League standings
+ 6. League commissioner operations
+ 7. Management reports
+ 8. Save data
+ 9. Load data
+10. Exit
+Choose an option: Goodbye.
+
