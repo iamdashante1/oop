@@ -1,0 +1,64 @@
+PASS  spectator is a Person with its own role
+PASS  duplicate spectator rejected
+PASS  invalid spectator age rejected
+PASS  two seats accept exactly two tickets
+PASS  third ticket rejected (sold out)
+PASS  rejected sale does not count
+PASS  ticket stores fixture and spectator IDs
+PASS  spectator keeps the ticket ID
+PASS  cancelled ticket frees a seat
+PASS  VIP costs twice the stadium price
+PASS  cancelling twice rejected
+PASS  ticket revenue counts only sold tickets
+PASS  unknown spectator rejected
+PASS  unknown fixture rejected
+PASS  missing category rejected
+PASS  negative ticket price rejected
+PASS  no tickets for a completed fixture
+PASS  getType() is overridden by each subclass
+PASS  duplicate product ID rejected
+PASS  negative stock rejected
+PASS  negative price rejected
+PASS  unknown product rejected
+PASS  valid multi-item payment succeeds
+PASS  change is payment minus total
+PASS  stock reduces correctly
+PASS  sale is recorded
+---------- KPFL STADIUM SHOP ----------
+Receipt R0001  2026-11-25 23:44
+Jersey                  1 x J$6,900.00 =   J$6,900.00
+Jerk Chicken Box        2 x J$1,150.00 =   J$2,300.00
+Subtotal (before GCT)                    J$8,000.00
+GCT 15% (included)                       J$1,200.00
+TOTAL                                    J$9,200.00
+Paid                                    J$10,000.00
+Change                                     J$800.00
+---------------------------------------
+
+PASS  insufficient payment rejected
+PASS  failed payment leaves stock unchanged
+PASS  exact payment accepted
+PASS  negative quantity rejected
+PASS  zero quantity rejected
+PASS  more than the stock rejected
+PASS  empty basket rejected
+PASS  mixed bad sale rejected
+PASS  mixed bad sale changes nothing
+PASS  restock adds stock
+PASS  restock of zero rejected
+PASS  GCT inside J$1,150 is J$150
+PASS  pre-tax part of J$1,150 is J$1,000
+PASS  receipt total is not taxed again
+PASS  receipt shows subtotal 1000 and GCT 150
+PASS  receipt text lists the GCT line
+PASS  sales view counts sold tickets only
+PASS  sales view ticket revenue
+PASS  sales view shop revenue and count
+PASS  tickets survive save and reload
+PASS  cancelled status survives reload
+PASS  spectators keep their tickets
+PASS  inventory and stock survive
+PASS  product subclasses survive
+PASS  sales and revenue survive
+PASS  sold-out rule still works after reload
+52 Ticketing & Shop checks passed.

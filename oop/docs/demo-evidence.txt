@@ -1,0 +1,45 @@
+### Session 1: sample data, fixtures report, shop sale (1 rejected, 1 receipt), officials, invalid score, save
+=== Kingston Premier Football League (KPFL) ===
+-- Upcoming (1) --
+F003   2026-11-14 15:00  Kingston Lions       vs Spanish Town Eagles   @ National Stadium
+       Officials: Marcus Bailey (Referee)
+-- Completed (2) --
+F001   2026-11-07 15:00  Kingston Lions       2 - 1 Portmore Falcons      @ National Stadium
+       Officials: Marcus Bailey (Referee)
+F002   2026-11-07 17:00  Spanish Town Eagles  0 - 0 Montego Bay United    @ Montego Bay Sports Complex
+Product ID: Quantity: Product ID: Amount paid: Error: Insufficient payment: total is J$3,000.00 but only J$1,000.00 was paid.
+Product ID: Quantity: Product ID: Amount paid: ---------- KPFL STADIUM SHOP ----------
+Receipt R0002  2026-10-28 23:16
+Team Flag               2 x J$1,500.00 =   J$3,000.00
+Subtotal (before GCT)                    J$2,608.70
+GCT 15% (included)                         J$391.30
+TOTAL                                    J$3,000.00
+Paid                                     J$5,000.00
+Change                                   J$2,000.00
+---------------------------------------
+- Approved team T002 (Portmore Falcons)
+- Approved team T003 (Spanish Town Eagles)
+- Approved team T004 (Montego Bay United)
+- Assigned Marcus Bailey (Referee) to fixture F001
+- Assigned Marcus Bailey (Referee) to fixture F003
+- Fixture F003: Pitch inspection passed
+- Assigned Linda Clarke (Assistant Referee) to fixture F003
+
+### Session 2: restart (auto-load), fixtures and sales reports
+=== Kingston Premier Football League (KPFL) ===
+Loaded saved data from the data/ folder.
+-- Upcoming (1) --
+F003   2026-11-14 15:00  Kingston Lions       vs Spanish Town Eagles   @ National Stadium
+       Officials: Marcus Bailey (Referee), Linda Clarke (Assistant Referee)
+-- Completed (2) --
+F001   2026-11-07 15:00  Kingston Lions       2 - 1 Portmore Falcons      @ National Stadium
+       Officials: Marcus Bailey (Referee)
+F002   2026-11-07 17:00  Spanish Town Eagles  0 - 0 Montego Bay United    @ Montego Bay Sports Complex
+Fix    Match                                  Sold      Cap      Revenue
+F001   Kingston Lions v Portmore Falcons         0    35000       J$0.00
+F002   Spanish Town Eagles v Montego Bay United        0     7000       J$0.00
+F003   Kingston Lions v Spanish Town Eagles        2    35000   J$4,500.00
+-----
+Tickets sold: 2   Ticket revenue: J$4,500.00
+Shop transactions: 2   Shop revenue: J$12,200.00
+TOTAL (GCT incl.): J$16,700.00   of which GCT 15%: J$2,178.26   pre-tax: J$14,521.74
