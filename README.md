@@ -17,6 +17,7 @@ Run from the project folder so the `data/` folder is found. With Maven: `mvn pac
 javac -d out -encoding UTF-8 $(find src/main src/test -name "*.java")
 java -cp out kpfl.Member1Tests
 java -cp out kpfl.Member2Tests
+java -cp out kpfl.Member3Tests
 java -cp out kpfl.Member4Tests
 java -cp out kpfl.IntegrationTests
 ```

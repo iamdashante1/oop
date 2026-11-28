@@ -31,7 +31,7 @@
         </configuration>
       </plugin>
       <!-- The tests are plain programs with a main() method, not JUnit tests.
-           "mvn verify" runs all four of them and fails the build if any check fails. -->
+           "mvn verify" runs all five of them and fails the build if any check fails. -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -41,6 +41,8 @@
             <configuration><mainClass>kpfl.Member1Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
           <execution><id>member2</id><phase>verify</phase><goals><goal>java</goal></goals>
             <configuration><mainClass>kpfl.Member2Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
+          <execution><id>member3</id><phase>verify</phase><goals><goal>java</goal></goals>
+            <configuration><mainClass>kpfl.Member3Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
           <execution><id>member4</id><phase>verify</phase><goals><goal>java</goal></goals>
             <configuration><mainClass>kpfl.Member4Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
           <execution><id>integration</id><phase>verify</phase><goals><goal>java</goal></goals>

@@ -8,6 +8,7 @@ Run: java -cp out kpfl.<TestName>  (prints PASS/FAIL per check; non-zero exit on
 
 Member1Tests: 22 passed, 0 failed
 Member2Tests: 32 Team & Personnel checks passed.
+Member3Tests: 132 passed, 0 failed
 Member4Tests: 52 Ticketing & Shop checks passed.
 IntegrationTests: 85 passed, 0 failed
 

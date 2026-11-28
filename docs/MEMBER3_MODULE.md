@@ -49,6 +49,7 @@ The project targets Java 17. From the repository root:
 ```bash
 mkdir -p out
 javac -d out -encoding UTF-8 $(find src/main src/test -name '*.java')
+java -cp out kpfl.Member3Tests      # this module: 132 checks
 java -cp out kpfl.IntegrationTests
 java -cp out kpfl.Member1Tests
 ```

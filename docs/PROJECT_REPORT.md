@@ -79,12 +79,13 @@ If a saved file is damaged, the app prints the error, moves the folder to `data_
 
 Environment: Temurin JDK 17.0.21. Compiled with `javac -Xlint:all`: no errors, no warnings.
 
-**Automated: 191 checks, 0 failures**
+**Automated: 323 checks, 0 failures**
 
 | Program | Checks | Covers |
 |---|---|---|
 | `Member1Tests` | 22 | points, negative scores, one result per fixture, standings, reports |
 | `Member2Tests` | 32 | `Person` polymorphism, age rules, jersey rules, squads, statuses |
+| `Member3Tests` | 132 | stadium validation, search and update, fixture creation rules, overlap and back-to-back slots, reschedule and cancel, officials (rules, availability, assign, unassign), results and correction, interface contracts, save and reload of fixtures and officials |
 | `Member4Tests` | 52 | capacity, VIP price, cancellation, shop checks, stock, GCT, sales feed, save/reload |
 | `IntegrationTests` | 85 | clashes and overlaps, reschedule/cancel, officials, result correction, refunds, product maintenance, full save and reload |
 
