@@ -62,6 +62,17 @@ public class FileStorage {
         return Files.exists(dir.resolve("teams.txt"));
     }
 
+    /** Renames an unreadable data folder so it is kept for repair. Returns the new folder name. */
+    public String quarantine() {
+        Path target = dir.resolveSibling(dir.getFileName() + "_damaged_" + System.currentTimeMillis());
+        try {
+            Files.move(dir, target);
+        } catch (IOException e) {
+            throw new ValidationException("Could not set the damaged data folder aside: " + e.getMessage());
+        }
+        return target.getFileName().toString();
+    }
+
     public void save(AppData app) {
         try {
             Files.createDirectories(dir);
@@ -197,6 +208,8 @@ public class FileStorage {
                         league.findStadium(p[3]), LocalDateTime.parse(p[4]));
                 if (Fixture.Status.valueOf(p[5]) == Fixture.Status.COMPLETED)
                     f.complete(new MatchResult(p[0], Integer.parseInt(p[6]), Integer.parseInt(p[7])));
+                // A cancelled fixture must come back cancelled, not scheduled again.
+                if (Fixture.Status.valueOf(p[5]) == Fixture.Status.CANCELLED) f.cancel();
                 league.restoreFixture(f);
             }
             for (String[] p : readLines("fixture_officials.txt", 2)) league.restoreOfficialAssignment(p[0], p[1]);

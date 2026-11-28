@@ -1,34 +1,20 @@
-# Integration contracts (proposed – needs group agreement)
+# Integration contracts
 
-These are Member 1's proposed interfaces in `kpfl.integration`. Changing them affects Member 1's code, so please agree changes first.
-All ids are `String`; dates/times use `LocalDate` / `LocalDateTime`.
+How the modules connect. The shared classes live in `kpfl.model` / `kpfl.service`; the small interfaces in `kpfl.integration` keep the IDs the modules use to refer to each other stable.
 
-## Member 2
-* `FootballTeam implements TeamInfo` → `getTeamId()`, `getTeamName()`. Names must be unique (league rejects duplicates).
-* `Person` must provide `Person(String personId, String name)`, `getPersonId()`, `getName()`. `LeagueCommissioner extends Person`.
-* Registration: call `league.registerTeam(team)`.
+| Interface | Implemented by | Methods |
+|---|---|---|
+| `TeamInfo` | `FootballTeam` (Member 2) | `getTeamId()`, `getTeamName()` |
+| `StadiumInfo` | `Stadium` (Member 3) | `getStadiumId()`, `getStadiumName()` |
+| `FixtureInfo` | `Fixture` (Member 3) | `getFixtureId()`, `getHomeTeamId()`, `getAwayTeamId()`, `getStadiumId()`, `getDateTime()`, `isCompleted()`, `markCompleted()` |
+| `SalesProvider` (`kpfl.service`) | `AppData.sales()` (Member 4) | `ticketsSold`, `ticketRevenue`, `shopRevenue`, `shopTransactionCount`, `ticketsRefunded`, `refundTotal` |
 
-## Member 3
-* `Stadium implements StadiumInfo` → `getStadiumId()`, `getStadiumName()`.
-* `Fixture implements FixtureInfo` → `getFixtureId()`, `getHomeTeamId()`, `getAwayTeamId()`, `getStadiumId()`, `getDateTime()`, `isCompleted()`, `markCompleted()`.
-* Add stadiums/fixtures with `league.addStadium(..)` / `league.addFixture(..)` (teams and stadium must already be registered).
-* `markCompleted()` is called by the league after a result is stored. Scheduling-conflict checks stay in Member 3's code.
-* Officials are referenced by id only: `commissioner.assignOfficialToFixture(fixtureId, officialId)`.
-
-## Member 4
-* Provide a `SalesProvider` (on `StadiumShop` or a small facade): `getTotalTicketRevenue()`, `getTotalShopRevenue()` (`BigDecimal`), `getTicketsSold()`, `getShopTransactionCount()`.
-* Pass it to `new ReportService(league, salesProvider)` in `Main.main` (currently `null` → report says data unavailable).
-
-## Menus
-Implement `MenuModule.run(Scanner)` for your section and register it:
-`app.registerModule(Main.TEAMS | STADIUMS | FIXTURES | COMMISSIONER, module)`.
+## Rules for everyone
+* All IDs are `String`; dates and times are `LocalDate` / `LocalDateTime`.
+* Every person class extends `Person` (see `person-contract.md`).
+* Relationships are saved as IDs and rebuilt on load, so an ID must never change after creation.
+* A fixture only becomes COMPLETED through `Fixture.complete(result)`. A cancelled fixture can no longer take a result, officials or ticket sales.
+* Anything that cancels a fixture should go through `AppData.cancelFixture(id, reason)`, which also refunds the tickets.
 
 ## File storage
-Use `FileStorage.saveLines(fileName, lines)` / `readLines(fileName)` for your own files (safe save with `.bak`, missing file = empty list).
-Format: one record per line, fields separated by `|`, relationships stored as ids (e.g. `fixtureId|homeTeamId|awayTeamId|...`).
-Fields must not contain `|` or line breaks. Suggested files: `teams.txt`, `stadiums.txt`, `fixtures.txt`, `tickets.txt`, `sales.txt`.
-Member 1's files: `results.txt` (`fixtureId|homeTeamId|awayTeamId|homeScore|awayScore|date`) and `commissioner.txt`.
-
-## Current limitations
-Nothing in options 1, 2, 3, 6 works until those modules exist. Teams/fixtures are not persisted by Member 1 (only results and commissioner records); on load, results are restored without needing the fixtures to exist yet.
-`Main` saves only league results; saving `commissioner.txt` must be wired in when `LeagueCommissioner` is connected (`FileStorage.saveCommissionerRecords`).
+`FileStorage` (Member 1) saves one pipe-separated file per record type in `data/`. The full list of files and columns is in its class comment. Characters that would break the format (`|`, line breaks) are replaced when saving. Product IDs may not contain `|`, `:` or `;` because sales are saved as `productId:qty:price;...`.

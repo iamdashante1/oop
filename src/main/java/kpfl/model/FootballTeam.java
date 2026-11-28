@@ -1,12 +1,13 @@
 package kpfl.model;
 
 import kpfl.exception.ValidationException;
+import kpfl.integration.TeamInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** A registered team with its players and coaches. */
-public class FootballTeam {
+public class FootballTeam implements TeamInfo {
     private final String registrationNo;
     private String name;
     private String parish;
@@ -25,6 +26,9 @@ public class FootballTeam {
 
     public String getRegistrationNo() { return registrationNo; }
     public String getName() { return name; }
+    // Integration names used by the shared TeamInfo contract and the tests.
+    @Override public String getTeamId() { return registrationNo; }
+    @Override public String getTeamName() { return name; }
     public String getParish() { return parish; }
     public String getStatus() { return status; }
     public void setStatus(String status) {

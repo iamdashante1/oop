@@ -1,6 +1,6 @@
 # Member 2: Team & Personnel
 
-The four integrated files are in `src/main/java/kpfl/model/` because the rest of the app imports them from `kpfl.model`. A separate `team-personnel/` working folder contains just these four classes and the `ValidationException` helper needed to compile them on their own.
+The four integrated files are in `src/main/java/kpfl/model/` because the rest of the app imports them from `kpfl.model`.
 
 All members should follow the [shared Person contract](person-contract.md) when extending `Person`.
 

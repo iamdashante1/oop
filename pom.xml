@@ -10,9 +10,6 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- LeagueCommissioner extends Member 2's Person; excluded until Person.java exists.
-         Build with -Pwith-person once it does. -->
-    <commissioner.exclude>**/LeagueCommissioner.java</commissioner.exclude>
   </properties>
 
   <build>
@@ -20,23 +17,36 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+      </plugin>
+      <!-- "mvn package" builds a jar you can start with: java -jar target/kpfl-1.0.jar -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
         <configuration>
-          <excludes><exclude>${commissioner.exclude}</exclude></excludes>
+          <archive>
+            <manifest>
+              <mainClass>kpfl.ui.Main</mainClass>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
+      <!-- The tests are plain programs with a main() method, not JUnit tests.
+           "mvn verify" runs all four of them and fails the build if any check fails. -->
       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.5</version>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution><id>member1</id><phase>verify</phase><goals><goal>java</goal></goals>
+            <configuration><mainClass>kpfl.Member1Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
+          <execution><id>member2</id><phase>verify</phase><goals><goal>java</goal></goals>
+            <configuration><mainClass>kpfl.Member2Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
+          <execution><id>member4</id><phase>verify</phase><goals><goal>java</goal></goals>
+            <configuration><mainClass>kpfl.Member4Tests</mainClass><classpathScope>test</classpathScope></configuration></execution>
+          <execution><id>integration</id><phase>verify</phase><goals><goal>java</goal></goals>
+            <configuration><mainClass>kpfl.IntegrationTests</mainClass><classpathScope>test</classpathScope></configuration></execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>with-person</id>
-      <properties>
-        <commissioner.exclude>**/NONE</commissioner.exclude>
-      </properties>
-    </profile>
-  </profiles>
 </project>

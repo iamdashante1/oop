@@ -42,6 +42,7 @@ public class ReportService {
         // Show matches in two groups based on whether a result has been recorded.
         appendFixtures(sb, "Upcoming", league.getFixtures(Fixture.Status.SCHEDULED));
         appendFixtures(sb, "Completed", league.getFixtures(Fixture.Status.COMPLETED));
+        appendFixtures(sb, "Cancelled", league.getFixtures(Fixture.Status.CANCELLED));
         return sb.toString();
     }
 
@@ -85,6 +86,8 @@ public class ReportService {
         sb.append("-----\n");
         sb.append(String.format("Tickets sold: %d   Ticket revenue: %s%n", totalTickets, money(ticketTotal)));
         sb.append(String.format("Shop transactions: %d   Shop revenue: %s%n", sales.shopTransactionCount(), money(shop)));
+        // Refunded tickets are not in the revenue above; they are shown so the totals can be checked.
+        sb.append(String.format("Tickets refunded: %d   Amount refunded: %s%n", sales.ticketsRefunded(), money(sales.refundTotal())));
         sb.append(String.format("TOTAL (GCT incl.): %s   of which GCT 15%%: %s   pre-tax: %s%n",
                 money(grand), money(Money.gctIncluded(grand)), money(Money.preTax(grand))));
         return sb.toString();

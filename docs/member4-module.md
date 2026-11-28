@@ -29,6 +29,13 @@ Code that holds a `Product` reference (the inventory list, the receipt, the menu
 * Rejected: empty basket, zero or negative quantity, more than the stock, unknown product, insufficient payment.
 * **GCT:** every price already includes 15% GCT. GCT = total x 15/115, so J$1,150 = J$1,000 + J$150 (never add 15% again).
 
+## Added later
+* Spectators can be listed and searched, and a spectator's tickets can be shown.
+* Cancelling a fixture (`AppData.cancelFixture`) cancels and refunds every sold ticket. The sales report shows tickets refunded and the amount.
+* A cancelled ticket cannot be sold again; `Ticket` rejects missing IDs, a missing category and non-finite prices.
+* Products can be updated (name, price) and removed. A product that appears on a past receipt cannot be removed, because saved sales refer to it. Receipts can be reprinted by ID.
+* Product IDs cannot contain `|`, `:` or `;` (they would break the saved sales file).
+
 ## Sample receipt
 
 ```
@@ -55,10 +62,10 @@ sales.txt        receiptId|time|payment|productId:qty:price;productId:qty:price
 
 ## Tests
 
-`src/test/java/kpfl/Member4Tests.java` (52 checks). Results are in `docs/member4-test-evidence.txt`.
+`src/test/java/kpfl/Member4Tests.java` (52 checks). The refund, cancellation and shop-maintenance rules are in `IntegrationTests`. Results are in `docs/test-evidence.txt`.
 
 ```
-javac -d out -cp out src/test/java/kpfl/Member4Tests.java
+javac -d out -encoding UTF-8 $(find src/main src/test -name "*.java")
 java -cp out kpfl.Member4Tests
 ```
 

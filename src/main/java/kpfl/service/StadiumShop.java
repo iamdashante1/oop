@@ -34,6 +34,36 @@ public class StadiumShop {
         findProduct(productId).addStock(qty);
     }
 
+    /** Changes the name and price. Past receipts keep the price they were sold at. */
+    public void updateProduct(String productId, String name, double unitPrice) {
+        Product p = findProduct(productId);
+        // Validate both values first so a bad price cannot leave the name half-changed.
+        String oldName = p.getName();
+        p.setName(name);
+        try {
+            p.setUnitPrice(unitPrice);
+        } catch (ValidationException e) {
+            p.setName(oldName);
+            throw e;
+        }
+    }
+
+    /** A product that appears on a past receipt cannot be removed, because saved sales refer to it. */
+    public void removeProduct(String productId) {
+        Product p = findProduct(productId);
+        for (Receipt r : sales) {
+            for (Receipt.Line l : r.getLines())
+                if (l.getProductId().equals(p.getProductId()))
+                    throw new ValidationException(p.getName() + " has been sold before and cannot be removed.");
+        }
+        inventory.remove(p.getProductId());
+    }
+
+    public Receipt findReceipt(String receiptId) {
+        for (Receipt r : sales) if (r.getReceiptId().equalsIgnoreCase(receiptId == null ? "" : receiptId.trim())) return r;
+        throw new ValidationException("No receipt with ID " + receiptId + ".");
+    }
+
     public List<Product> getInventory() { return new ArrayList<>(inventory.values()); }
 
     /**

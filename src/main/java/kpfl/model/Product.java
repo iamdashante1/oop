@@ -13,17 +13,29 @@ public abstract class Product {
         if (productId == null || productId.trim().isEmpty()) throw new ValidationException("Product ID is required.");
         if (name == null || name.trim().isEmpty()) throw new ValidationException("Product name is required.");
         if (stock < 0) throw new ValidationException("Stock cannot be negative.");
-        if (unitPrice < 0) throw new ValidationException("Price cannot be negative.");
+        // These characters separate fields in the saved sales file, so they cannot be part of an ID.
+        if (productId.contains("|") || productId.contains(":") || productId.contains(";"))
+            throw new ValidationException("Product ID cannot contain | : or ;");
         this.productId = productId.trim();
-        this.name = name.trim();
+        setName(name);
         this.stock = stock;
-        this.unitPrice = unitPrice;
+        setUnitPrice(unitPrice);
     }
 
     public String getProductId() { return productId; }
     public String getName() { return name; }
     public int getStock() { return stock; }
     public double getUnitPrice() { return unitPrice; }
+
+    public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) throw new ValidationException("Product name is required.");
+        this.name = name.trim();
+    }
+
+    public void setUnitPrice(double unitPrice) {
+        if (!Double.isFinite(unitPrice) || unitPrice < 0) throw new ValidationException("Price must be a finite, non-negative amount.");
+        this.unitPrice = unitPrice;
+    }
 
     public void addStock(int qty) {
         if (qty <= 0) throw new ValidationException("Restock quantity must be positive.");

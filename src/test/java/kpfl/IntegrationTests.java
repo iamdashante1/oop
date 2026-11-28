@@ -37,6 +37,10 @@ public class IntegrationTests {
         stadiumManagement();
         fixtureAndOfficialSearch();
         officialRules();
+        fixtureChanges();
+        cancelledFixtureSurvivesReload();
+        resultCorrectionAndRefunds();
+        shopMaintenance();
         commissionerLog();
         ticketCapacity();
         shopRules();
@@ -129,6 +133,94 @@ public class IntegrationTests {
         l.recordResult("F1", 1, 0);
         l.registerOfficial(new MatchOfficial("O3", "Ref Three", 41, "M", "Referee"));
         check("cannot assign to completed fixture", throwsValidation(() -> l.assignOfficial("F1", "O3")));
+    }
+
+    private static void fixtureChanges() {
+        FootballLeague l = base().getLeague();
+        check("overlapping time slot rejected", throwsValidation(() -> l.addFixture(new Fixture("F7",
+                l.findTeam("A"), l.findTeam("C"), l.findStadium("S2"), T1.plusMinutes(90)))));
+        LocalDateTime next = T1.plusMinutes(Fixture.DURATION_MINUTES);
+        check("back-to-back time slot allowed", !throwsValidation(() -> l.addFixture(new Fixture("F8",
+                l.findTeam("A"), l.findTeam("C"), l.findStadium("S2"), next))));
+        check("reschedule onto a clash rejected", throwsValidation(() -> l.rescheduleFixture("F8", T1)));
+        check("rejected reschedule keeps the old time", l.findFixture("F8").getDateTime().equals(next));
+        l.rescheduleFixture("F8", T1.plusDays(3));
+        check("fixture rescheduled", l.findFixture("F8").getDateTime().equals(T1.plusDays(3)));
+        check("cancel needs a reason", throwsValidation(() -> l.cancelFixture("F8", " ")));
+        l.cancelFixture("F8", "Pitch flooded");
+        check("fixture cancelled", l.findFixture("F8").getStatus() == Fixture.Status.CANCELLED);
+        check("cancelled fixture cannot take a result", throwsValidation(() -> l.recordResult("F8", 1, 0)));
+        check("cancelled fixture cannot be moved", throwsValidation(() -> l.rescheduleFixture("F8", T1.plusDays(5))));
+        check("cancelled fixture frees its slot", !throwsValidation(() -> l.addFixture(new Fixture("F9",
+                l.findTeam("A"), l.findTeam("C"), l.findStadium("S2"), T1.plusDays(3)))));
+        l.assignOfficial("F1", "O1");
+        l.unassignOfficial("F1", "O1");
+        check("official unassigned", !l.findFixture("F1").hasOfficial("O1"));
+        check("unassigning twice rejected", throwsValidation(() -> l.unassignOfficial("F1", "O1")));
+        check("fixture search finds cancelled status", l.searchFixtures("cancelled").size() == 1);
+    }
+
+    private static void cancelledFixtureSurvivesReload() throws Exception {
+        AppData app = base();
+        app.getLeague().cancelFixture("F1", "Pitch flooded");
+        Path tmp = Files.createTempDirectory("kpfl-cancel");
+        new FileStorage(tmp.toString()).save(app);
+        AppData reloaded = new FileStorage(tmp.toString()).load();
+        check("reload: cancelled fixture stays cancelled",
+                reloaded.getLeague().findFixture("F1").getStatus() == Fixture.Status.CANCELLED);
+    }
+
+    private static void resultCorrectionAndRefunds() {
+        AppData app = base();
+        FootballLeague l = app.getLeague();
+        l.recordResult("F1", 0, 1);
+        check("wrong result corrected", l.correctResult("F1", 2, 1).homePoints() == 3
+                && l.findFixture("F1").getResult().getHomeScore() == 2);
+        check("standings follow the corrected result", l.getStandings().get(0).getTeam().getName().equals("Team A"));
+        check("correcting a scheduled fixture rejected", throwsValidation(() -> {
+            l.addFixture(new Fixture("F20", l.findTeam("A"), l.findTeam("C"), l.findStadium("S2"), T1.plusDays(9)));
+            l.correctResult("F20", 1, 1);
+        }));
+        check("correction is logged", l.getCommissioner().getDecisions().get(l.getCommissioner().getDecisions().size() - 1)
+                .startsWith("Corrected result of fixture F1"));
+
+        AppData app2 = base();
+        app2.getTickets().addSpectator(new Spectator("SP1", "Sam Fan", 30, "M"));
+        app2.getTickets().addSpectator(new Spectator("SP2", "Pat Fan", 28, "F"));
+        app2.getTickets().sellTicket("F1", "SP1", Ticket.Category.GENERAL);
+        app2.getTickets().sellTicket("F1", "SP2", Ticket.Category.VIP);
+        check("spectator search by name", app2.getTickets().searchSpectators("sam").size() == 1);
+        check("tickets listed per spectator", app2.getTickets().ticketsFor("SP2").size() == 1);
+        int refunded = app2.cancelFixture("F1", "Pitch flooded");
+        check("cancelling a fixture refunds its tickets", refunded == 2 && app2.getTickets().ticketsSold("F1") == 0);
+        check("refund total is reported", app2.getTickets().refundTotal() == 3000.0 && app2.sales().ticketsRefunded() == 2);
+        check("refund shows in sales report", new ReportService(app2.getLeague(), app2.sales()).salesReport()
+                .contains("Tickets refunded: 2"));
+        check("no tickets after cancellation", throwsValidation(() ->
+                app2.getTickets().sellTicket("F1", "SP1", Ticket.Category.GENERAL)));
+        check("cancelled ticket cannot be sold again", throwsValidation(() ->
+                app2.getTickets().ticketsFor("SP1").get(0).setStatus(Ticket.Status.SOLD)));
+        check("ticket needs a category", throwsValidation(() -> new Ticket("T", "F1", "SP1", null, 100)));
+        check("ticket price must be finite", throwsValidation(() -> new Ticket("T", "F1", "SP1", Ticket.Category.VIP, Double.NaN)));
+    }
+
+    private static void shopMaintenance() {
+        AppData app = base();
+        app.getShop().addProduct(new Merchandise("M1", "Jersey", 5, 6900, "M"));
+        app.getShop().addProduct(new FoodItem("F1", "Patty", 10, 500, false));
+        app.getShop().updateProduct("M1", "Home Jersey", 7000);
+        check("product updated", app.getShop().findProduct("M1").getName().equals("Home Jersey")
+                && app.getShop().findProduct("M1").getUnitPrice() == 7000);
+        check("bad price keeps the old name", throwsValidation(() -> app.getShop().updateProduct("M1", "Changed", Double.NaN))
+                && app.getShop().findProduct("M1").getName().equals("Home Jersey"));
+        check("product ID cannot break the sales file", throwsValidation(() -> new FoodItem("A:1", "Bad", 1, 1, false)));
+        app.getShop().removeProduct("F1");
+        check("unsold product removed", throwsValidation(() -> app.getShop().findProduct("F1")));
+        Map<String, Integer> basket = new LinkedHashMap<>();
+        basket.put("M1", 1);
+        String receiptId = app.getShop().checkout(basket, 7000).getReceiptId();
+        check("sold product cannot be removed", throwsValidation(() -> app.getShop().removeProduct("M1")));
+        check("receipt found by ID", app.getShop().findReceipt(receiptId).getTotal() == 7000);
     }
 
     private static void commissionerLog() {

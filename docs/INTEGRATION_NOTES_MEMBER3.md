@@ -1,7 +1,7 @@
 # Member 3 Integration Notes
 
-The current application entry point is `kpfl.ui.Main`, and the active league coordinator is `kpfl.service.FootballLeague`.
+The application entry point is `kpfl.ui.Main` and the league coordinator is `kpfl.service.FootballLeague`.
 
-Two older duplicate source files (`kpfl.Main` and `kpfl.model.FootballLeague`) referenced obsolete APIs and caused whole-project compilation errors. They have been preserved as text archives in `docs/legacy/` and removed from the Java source tree so they cannot shadow or break the active application. No active source file depends on these archived versions.
+Earlier duplicate versions (`kpfl.Main`, `kpfl.model.FootballLeague`, `CommissionerRecords` and the `MenuModule` interface) used an older design that no longer compiled against the rest of the project. They were removed from the source tree; the history is in git. Nothing in the active code depends on them.
 
-The current source tree can be compiled together with the test programs using the Java 17 commands in `MEMBER3_MODULE.md`.
+Build and test with the commands in `MEMBER3_MODULE.md`, or `mvn verify`.

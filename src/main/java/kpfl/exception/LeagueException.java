@@ -8,6 +8,7 @@ package kpfl.exception;
  * "throws LeagueException" on every method that can throw it.
  */
 public class LeagueException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     // The message is what we show the user, e.g. "Scores cannot be negative."
     public LeagueException(String message) {

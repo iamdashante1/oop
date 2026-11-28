@@ -36,6 +36,49 @@ public class TicketService {
 
     public List<Spectator> getSpectators() { return new ArrayList<>(spectators.values()); }
 
+    /** Case-insensitive search on spectator ID or name. */
+    public List<Spectator> searchSpectators(String text) {
+        String q = text == null ? "" : text.trim().toLowerCase();
+        List<Spectator> found = new ArrayList<>();
+        for (Spectator s : spectators.values()) {
+            if (s.getId().toLowerCase().contains(q) || s.getName().toLowerCase().contains(q)) found.add(s);
+        }
+        return found;
+    }
+
+    /** All tickets (sold and cancelled) bought by one spectator. */
+    public List<Ticket> ticketsFor(String spectatorId) {
+        String id = findSpectator(spectatorId).getId();
+        List<Ticket> found = new ArrayList<>();
+        for (Ticket t : tickets) if (t.getSpectatorId().equals(id)) found.add(t);
+        return found;
+    }
+
+    /** Cancels every sold ticket for a fixture (used when the fixture is cancelled). Returns how many were refunded. */
+    public int cancelTicketsForFixture(String fixtureId) {
+        int count = 0;
+        for (Ticket t : tickets) {
+            if (t.isSold() && t.getFixtureId().equals(fixtureId)) {
+                t.setStatus(Ticket.Status.CANCELLED);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int ticketsRefunded() {
+        int n = 0;
+        for (Ticket t : tickets) if (!t.isSold()) n++;
+        return n;
+    }
+
+    /** Money given back for cancelled tickets (tax-inclusive). */
+    public double refundTotal() {
+        double sum = 0;
+        for (Ticket t : tickets) if (!t.isSold()) sum += t.getPrice();
+        return Money.round2(sum);
+    }
+
     /** Sells one ticket; rejected if the fixture is unknown/completed or the stadium is full. */
     public Ticket sellTicket(String fixtureId, String spectatorId, Ticket.Category category) {
         Fixture fixture = league.findFixture(fixtureId);
@@ -43,6 +86,8 @@ public class TicketService {
         if (category == null) throw new ValidationException("Ticket category is required.");
         if (fixture.getStatus() == Fixture.Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " has already been played.");
+        if (fixture.getStatus() == Fixture.Status.CANCELLED)
+            throw new ValidationException("Fixture " + fixtureId + " was cancelled.");
         int capacity = fixture.getStadium().getCapacity();
         // Only SOLD tickets occupy seats; a cancelled ticket frees its seat.
         if (ticketsSold(fixtureId) >= capacity)

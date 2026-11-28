@@ -48,12 +48,17 @@ public class Main {
         System.out.println("=== Kingston Premier Football League (KPFL) ===");
         // Continue from saved data when it exists; otherwise start a fresh league.
         if (storage.hasSavedData()) {
-            attempt(() -> {
+            try {
                 app = storage.load();
                 System.out.println("Loaded saved data from the data/ folder.");
-            });
+            } catch (ValidationException e) {
+                // Keep the unreadable files instead of letting the next save overwrite them.
+                System.out.println("Error: " + e.getMessage());
+                System.out.println("The saved files were moved to " + storage.quarantine() + ". Starting with an empty league.");
+                startFresh();
+            }
         } else {
-            league().setCommissioner(new LeagueCommissioner("C001", "League Commissioner", 45, "N/A"));
+            startFresh();
         }
 
         while (running) {
@@ -62,7 +67,7 @@ public class Main {
             System.out.println("MAIN MENU");
             System.out.println("1  Teams, players & coaches");
             System.out.println("2  Stadiums, fixtures & officials");
-            System.out.println("3  Record match result");
+            System.out.println("3  Match results");
             System.out.println("4  Tickets & stadium shop");
             System.out.println("5  Reports");
             System.out.println("6  Data (save / reload / sample data)");
@@ -70,7 +75,7 @@ public class Main {
             switch (prompt("Choose an option")) {
                 case "1": teamsMenu(); break;
                 case "2": fixturesMenu(); break;
-                case "3": attempt(this::recordResult); break;
+                case "3": resultsMenu(); break;
                 case "4": salesMenu(); break;
                 case "5": reportsMenu(); break;
                 case "6": dataMenu(); break;
@@ -79,6 +84,10 @@ public class Main {
             }
         }
         System.out.println("Goodbye.");
+    }
+
+    private void startFresh() {
+        league().setCommissioner(new LeagueCommissioner("C001", "League Commissioner", 45, "N/A"));
     }
 
     private void exit() {
@@ -121,23 +130,35 @@ public class Main {
 
     private void fixturesMenu() {
         subMenu("Stadiums, fixtures & officials",
-                new String[] {"Register stadium", "List stadiums", "Schedule fixture", "Register match official",
-                        "Assign official to fixture", "Record match-preparation note", "Show commissioner decisions"},
-                new Runnable[] {this::registerStadium, this::listStadiums, this::scheduleFixture,
-                        this::registerOfficial, this::assignOfficial, this::preparationNote, this::showDecisions});
+                new String[] {"Register stadium", "List / search stadiums", "Update stadium", "Schedule fixture",
+                        "List / search fixtures", "Reschedule fixture", "Cancel fixture", "Register match official",
+                        "List / search officials", "Set official availability", "Assign official to fixture",
+                        "Unassign official from fixture", "Record match-preparation note", "Show commissioner decisions"},
+                new Runnable[] {this::registerStadium, this::listStadiums, this::updateStadium, this::scheduleFixture,
+                        this::listFixtures, this::rescheduleFixture, this::cancelFixture, this::registerOfficial,
+                        this::listOfficials, this::setOfficialAvailability, this::assignOfficial,
+                        this::unassignOfficial, this::preparationNote, this::showDecisions});
+    }
+
+    private void resultsMenu() {
+        subMenu("Match results",
+                new String[] {"Record match result", "Correct a recorded result"},
+                new Runnable[] {this::recordResult, this::correctResult});
     }
 
     private void salesMenu() {
         subMenu("Tickets & stadium shop",
-                new String[] {"Add spectator", "Sell ticket", "Cancel ticket", "Add product", "Restock product",
-                        "List inventory", "Shop sale (with receipt)"},
-                new Runnable[] {this::addSpectator, this::sellTicket, this::cancelTicket, this::addProduct,
-                        this::restock, this::listInventory, this::shopSale});
+                new String[] {"Add spectator", "List / search spectators", "Show a spectator's tickets", "Sell ticket",
+                        "Cancel ticket", "Add product", "Update product", "Remove product", "Restock product",
+                        "List inventory", "Shop sale (with receipt)", "Reprint a receipt"},
+                new Runnable[] {this::addSpectator, this::listSpectators, this::showSpectatorTickets, this::sellTicket,
+                        this::cancelTicket, this::addProduct, this::updateProduct, this::removeProduct, this::restock,
+                        this::listInventory, this::shopSale, this::reprintReceipt});
     }
 
     private void reportsMenu() {
         subMenu("Reports",
-                new String[] {"League standings", "Fixtures (upcoming & completed)", "Ticket & shop sales summary"},
+                new String[] {"League standings", "Fixtures (upcoming, completed & cancelled)", "Ticket & shop sales summary"},
                 new Runnable[] {() -> System.out.println(reports().standingsReport()),
                         () -> System.out.println(reports().fixturesReport()),
                         () -> System.out.println(reports().salesReport())});
@@ -265,8 +286,34 @@ public class Main {
     }
 
     private void listStadiums() {
-        if (league().getStadiums().isEmpty()) System.out.println("No stadiums registered.");
-        for (Stadium s : league().getStadiums()) System.out.println(s);
+        List<Stadium> stadiums = league().searchStadiums(prompt("Search (blank for all)"));
+        if (stadiums.isEmpty()) System.out.println("No stadiums found.");
+        for (Stadium s : stadiums) System.out.println(s);
+    }
+
+    private void updateStadium() {
+        Stadium s = league().findStadium(prompt("Stadium ID"));
+        System.out.println(s);
+        // Start from the current values and replace only the one the user chooses.
+        String name = s.getName(), location = s.getLocation(), condition = s.getFieldCondition();
+        int capacity = s.getCapacity();
+        double price = s.getTicketPrice();
+        switch (prompt("Change: 1 Name, 2 Location, 3 Capacity, 4 Ticket price, 5 Field condition")) {
+            case "1": name = prompt("New name"); break;
+            case "2": location = prompt("New location"); break;
+            case "3": capacity = readInt("New seating capacity"); break;
+            case "4": price = readMoney("New ticket price (GCT incl.)"); break;
+            case "5": condition = prompt("New field condition"); break;
+            default: throw new ValidationException("Choose a number from 1 to 5.");
+        }
+        // Capacity cannot drop below the tickets already sold for any fixture at this stadium.
+        for (Fixture f : league().getFixtures()) {
+            int sold = app.getTickets().ticketsSold(f.getFixtureId());
+            if (f.getStadium() == s && sold > capacity)
+                throw new ValidationException("Fixture " + f.getFixtureId() + " already has " + sold + " tickets sold.");
+        }
+        league().updateStadium(s.getStadiumId(), name, location, capacity, price, condition);
+        System.out.println("Updated " + s);
     }
 
     private void scheduleFixture() {
@@ -278,6 +325,43 @@ public class Main {
         Fixture f = new Fixture(id, home, away, stadium, when);
         league().addFixture(f);
         System.out.println("Scheduled: " + f);
+    }
+
+    private void listFixtures() {
+        List<Fixture> fixtures = league().searchFixtures(prompt("Search ID, team, stadium or status (blank for all)"));
+        if (fixtures.isEmpty()) System.out.println("No fixtures found.");
+        for (Fixture f : fixtures) System.out.println(f);
+    }
+
+    private void rescheduleFixture() {
+        league().rescheduleFixture(prompt("Fixture ID"), readDateTime("New date and time (yyyy-MM-dd HH:mm)"));
+        System.out.println("Fixture rescheduled.");
+    }
+
+    private void cancelFixture() {
+        int refunded = app.cancelFixture(prompt("Fixture ID"), prompt("Reason"));
+        System.out.println("Fixture cancelled. Tickets refunded: " + refunded + ".");
+    }
+
+    private void listOfficials() {
+        List<MatchOfficial> officials = league().searchOfficials(prompt("Search (blank for all)"));
+        if (officials.isEmpty()) System.out.println("No officials found.");
+        for (MatchOfficial o : officials) System.out.println(o.getId() + ": " + o);
+    }
+
+    private void setOfficialAvailability() {
+        MatchOfficial o = league().findOfficial(prompt("Official ID"));
+        switch (prompt("Set " + o.getName() + " as: 1 Available, 2 Unavailable")) {
+            case "1": o.setAvailable(true); break;
+            case "2": o.setAvailable(false); break;
+            default: throw new ValidationException("Choose 1 or 2.");
+        }
+        System.out.println("Updated " + o);
+    }
+
+    private void unassignOfficial() {
+        league().unassignOfficial(prompt("Fixture ID"), prompt("Official ID"));
+        System.out.println("Official removed from the fixture.");
     }
 
     private void registerOfficial() {
@@ -311,7 +395,46 @@ public class Main {
         System.out.println("Result recorded: " + r + " (" + r.getOutcome() + ")");
     }
 
+    private void correctResult() {
+        String id = prompt("Fixture ID");
+        int home = readInt("Corrected home score");
+        int away = readInt("Corrected away score");
+        MatchResult r = league().correctResult(id, home, away);
+        System.out.println("Result corrected: " + r + " (" + r.getOutcome() + ")");
+    }
+
     // ---- tickets and shop ----
+
+    private void listSpectators() {
+        List<Spectator> found = app.getTickets().searchSpectators(prompt("Search (blank for all)"));
+        if (found.isEmpty()) System.out.println("No spectators found.");
+        for (Spectator s : found) System.out.println(s.getId() + ": " + s);
+    }
+
+    private void showSpectatorTickets() {
+        List<Ticket> found = app.getTickets().ticketsFor(prompt("Spectator ID"));
+        if (found.isEmpty()) System.out.println("No tickets for that spectator.");
+        for (Ticket t : found) System.out.println(t);
+    }
+
+    private void updateProduct() {
+        Product p = app.getShop().findProduct(prompt("Product ID"));
+        System.out.println(p);
+        String name = prompt("New name (blank to keep)");
+        String price = prompt("New unit price, GCT incl. (blank to keep)");
+        app.getShop().updateProduct(p.getProductId(), name.isEmpty() ? p.getName() : name,
+                price.isEmpty() ? p.getUnitPrice() : parseMoney(price));
+        System.out.println("Updated " + p);
+    }
+
+    private void removeProduct() {
+        app.getShop().removeProduct(prompt("Product ID"));
+        System.out.println("Product removed.");
+    }
+
+    private void reprintReceipt() {
+        System.out.println(app.getShop().findReceipt(prompt("Receipt ID")).format());
+    }
 
     private void addSpectator() {
         app.getTickets().addSpectator(new Spectator(prompt("Spectator ID"), prompt("Name"), readInt("Age"),
@@ -396,9 +519,15 @@ public class Main {
     }
 
     private double readMoney(String label) {
-        String text = prompt(label);
+        return parseMoney(prompt(label));
+    }
+
+    /** Accepts only finite, non-negative amounts, so NaN and Infinity never reach a price or payment. */
+    private double parseMoney(String text) {
         try {
-            return Double.parseDouble(text);
+            double amount = Double.parseDouble(text);
+            if (!Double.isFinite(amount) || amount < 0) throw new NumberFormatException();
+            return amount;
         } catch (NumberFormatException e) {
             throw new ValidationException("'" + text + "' is not a valid amount.");
         }

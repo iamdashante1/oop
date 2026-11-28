@@ -11,7 +11,7 @@
 **Demonstrate:** register a stadium, search for it, update its capacity and ticket price, then list stadiums.
 
 ### 3. Fixture scheduling
-“The `Fixture` class links a home team, away team, stadium and date/time. It rejects missing information and a team playing itself. The league service checks that both teams are registered and ACTIVE, that the stadium is registered, and that neither team nor the stadium is already booked at the same date and time. Fixtures can be searched by fixture ID, team, stadium or status.”
+“The `Fixture` class links a home team, away team, stadium and date/time. It rejects missing information and a team playing itself. The league service checks that both teams are registered and ACTIVE, that the stadium is registered, and that neither team nor the stadium is already booked in an overlapping time slot (a match counts as 120 minutes). Fixtures can also be rescheduled or cancelled. Fixtures can be searched by fixture ID, team, stadium or status.”
 
 **Demonstrate:** schedule a valid fixture, then attempt to schedule the same team or stadium at the same time and show the validation message.
 
@@ -47,7 +47,7 @@
 
 **Why can’t a PENDING team be scheduled?** The league requires commissioner approval. Only ACTIVE teams are eligible to play.
 
-**What conflicts are checked?** A team cannot appear in two fixtures at the same date/time, a stadium cannot host two fixtures at the same date/time, and an official cannot officiate two fixtures at the same date/time.
+**What conflicts are checked?** A team, a stadium or an official cannot be in two fixtures whose 120-minute slots overlap. Back-to-back matches are allowed. Cancelled fixtures do not block a slot.
 
 **Why does a fixture have a status and a result?** Status indicates whether it is scheduled or completed; the linked result stores the scores. The fixture is completed only when a valid result is recorded.
 

@@ -6,12 +6,11 @@
 | 2 | _(to fill in)_ |
 | 3 | _(to fill in)_ |
 
-## Still waiting on other members
-* Member 2: Person, FootballTeam (needed to compile LeagueCommissioner and register teams).
-* Member 3: Stadium, Fixture (needed before results can be recorded in the running app).
-* Member 4: a SalesProvider for the sales report.
 
-## Not yet verified
-No automated tests exist (removed at the group's request). Win/draw/loss points, negative-score rejection and
-"results survive restart" have **not** been demonstrated end to end, because no teams or fixtures can be created until
-Members 2 and 3 deliver their classes. `docs/demo-run.txt` only shows the menu, input validation, empty reports, save and load.
+## Status
+All four modules are merged and the app runs end to end. Compile and test commands are in the README; the latest results are in `docs/test-evidence.txt`.
+
+## Still open
+* Practice-stadium request workflow (not built; the rules for it are not written down anywhere in the repo).
+* Money is stored as `double` rounded to cents; switching to `BigDecimal` would remove any chance of rounding drift.
+* Team approval does not require a minimum squad, and suspending a team does not touch its scheduled fixtures. These need a group decision first.

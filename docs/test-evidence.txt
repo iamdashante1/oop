@@ -1,14 +1,14 @@
 KPFL automated test evidence
 ============================
 
-Environment: Java 17 compatible source compilation using javac.
-Command: javac -Xlint:all -d out $(find src/main/java src/test/java -name '*.java')
-Result: compilation successful with no warnings.
+Compiled with JDK 17 (Temurin 17.0.21): javac -Xlint:all -encoding UTF-8 -d out $(find src/main src/test -name '*.java')
+Result: compilation successful, no warnings.
 
-IntegrationTests: 52 passed, 0 failed.
-Member1Tests: 22 passed, 0 failed.
-Total: 74 passed, 0 failed.
+Run: java -cp out kpfl.<TestName>  (prints PASS/FAIL per check; non-zero exit on failure)
 
-The tests include stadium validation/search/update, atomic rejection of invalid updates, integration interface methods, fixture search, team/stadium double-booking, official availability and double-booking, result completion, ticket capacity, shop transactions, and full save/reload checks.
+Member1Tests: 22 passed, 0 failed
+Member2Tests: 32 Team & Personnel checks passed.
+Member4Tests: 52 Ticketing & Shop checks passed.
+IntegrationTests: 85 passed, 0 failed
 
-Detailed successful check output is available by running the commands in docs/MEMBER3_MODULE.md.
+Covered: win/draw/loss points, negative scores, one result per fixture, result correction, standings, team/stadium/official clashes and overlapping time slots, reschedule and cancel (also after reload), official assign/unassign/availability, ticket capacity, refunds on cancellation, shop sales and stock, product update/remove rules, GCT receipts, and full save/reload of every record type.

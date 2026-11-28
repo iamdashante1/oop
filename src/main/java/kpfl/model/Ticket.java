@@ -24,7 +24,10 @@ public class Ticket {
     private Status status = Status.SOLD;
 
     public Ticket(String ticketId, String fixtureId, String spectatorId, Category category, double price) {
-        if (price < 0) throw new ValidationException("Ticket price cannot be negative.");
+        if (isBlank(ticketId) || isBlank(fixtureId) || isBlank(spectatorId))
+            throw new ValidationException("Ticket, fixture and spectator IDs are required.");
+        if (category == null) throw new ValidationException("Ticket category is required.");
+        if (!Double.isFinite(price) || price < 0) throw new ValidationException("Ticket price must be a finite, non-negative amount.");
         this.ticketId = ticketId;
         this.fixtureId = fixtureId;
         this.spectatorId = spectatorId;
@@ -38,8 +41,16 @@ public class Ticket {
     public Category getCategory() { return category; }
     public double getPrice() { return price; }
     public Status getStatus() { return status; }
-    public void setStatus(Status status) { this.status = status; }
+    // A cancelled ticket stays cancelled, so a refunded seat cannot be sold twice on the same ticket.
+    public void setStatus(Status status) {
+        if (status == null) throw new ValidationException("Ticket status is required.");
+        if (this.status == Status.CANCELLED && status == Status.SOLD)
+            throw new ValidationException("A cancelled ticket cannot be sold again.");
+        this.status = status;
+    }
     public boolean isSold() { return status == Status.SOLD; }
+
+    private static boolean isBlank(String text) { return text == null || text.trim().isEmpty(); }
 
     @Override
     public String toString() {

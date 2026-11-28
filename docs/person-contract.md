@@ -1,6 +1,6 @@
 # Shared `Person` contract (all members)
 
-The app uses one abstract `kpfl.model.Person` class. Member 2 owns it, but the classes for **all four members** use it. Its main copy is `src/main/java/kpfl/model/Person.java`; the `team-personnel/` folder has a matching copy for Member 2's standalone work.
+The app uses one abstract `kpfl.model.Person` class. Member 2 owns it, but the classes for **all four members** use it. Its main copy is `src/main/java/kpfl/model/Person.java`.
 
 ```java
 protected Person(String id, String name, int age, String gender)

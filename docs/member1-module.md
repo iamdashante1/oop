@@ -10,7 +10,7 @@
 - `FileStorage`: sequential pipe-delimited files in `data/`; links saved as IDs and rebuilt on load.
 
 ## Test evidence
-- `docs/test-evidence.txt` - 107 automated checks (Member1Tests 22, Member2Tests 32, IntegrationTests 53), all PASS.
+- `docs/test-evidence.txt` - automated checks for every member, all PASS (counts and the run command are in that file).
 - `docs/demo-evidence.txt` - scripted console sessions: sample data, fixtures report with officials, a rejected and a successful shop sale with receipt, duplicate official assignment, negative score, save, restart, identical reports after reload.
 
 | Required test | Result |
@@ -20,7 +20,8 @@
 | Completed fixture needs valid result / no second result | PASS |
 | Reports agree with stored data | PASS |
 | Save, close, restart restores records (teams, people, fixtures, officials, tickets, shop, decisions) | PASS |
-| Commissioner decisions (approvals, assignments, preparation notes) logged and reloaded | PASS |
+| Commissioner decisions (approvals, assignments, preparation notes, result corrections) logged and reloaded | PASS |
+| A wrongly entered result can be corrected and standings follow | PASS |
 
 ## Cross-module work done by Member 1 (to be reviewed by owners)
 Working versions of Members 2, 3 and 4's classes were written so the whole app runs end to end; each owner

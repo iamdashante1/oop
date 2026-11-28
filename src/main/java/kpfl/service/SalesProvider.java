@@ -18,8 +18,16 @@ public interface SalesProvider {
     /** Number of completed shop transactions. */
     int shopTransactionCount();
 
+    /** Number of cancelled (refunded) tickets. */
+    int ticketsRefunded();
+
+    /** Total tax-inclusive amount refunded for cancelled tickets. */
+    double refundTotal();
+
     /** Fallback for a report created without a sales source: reports zero sales. */
     SalesProvider NONE = new SalesProvider() {
+        @Override public int ticketsRefunded() { return 0; }
+        @Override public double refundTotal() { return 0; }
         @Override public int ticketsSold(String fixtureId) { return 0; }
         @Override public double ticketRevenue(String fixtureId) { return 0; }
         @Override public double shopRevenue() { return 0; }

@@ -10,13 +10,17 @@ import java.util.List;
 
 /** A scheduled match between two different teams at a stadium, with assigned officials and a result once played. */
 public class Fixture implements FixtureInfo {
-    public enum Status { SCHEDULED, COMPLETED }
+    public enum Status { SCHEDULED, COMPLETED, CANCELLED }
+
+    /** Every match is treated as lasting this long when checking for clashes in bookings. */
+    public static final int DURATION_MINUTES = 120;
 
     private final String fixtureId;
     private final FootballTeam homeTeam;
     private final FootballTeam awayTeam;
     private final Stadium stadium;
-    private final LocalDateTime dateTime;
+    // Not final: a scheduled fixture can be moved to a new date and time.
+    private LocalDateTime dateTime;
     private final List<MatchOfficial> officials = new ArrayList<>();
     private Status status = Status.SCHEDULED;
     private MatchResult result;
@@ -64,11 +68,42 @@ public class Fixture implements FixtureInfo {
         return false;
     }
 
+    /** True if a match starting at this time would overlap this fixture's time slot. */
+    public boolean overlaps(LocalDateTime other) {
+        return other.isBefore(dateTime.plusMinutes(DURATION_MINUTES))
+                && dateTime.isBefore(other.plusMinutes(DURATION_MINUTES));
+    }
+
+    /** Moves a scheduled fixture. FootballLeague.rescheduleFixture checks for clashes first. */
+    public void setDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) throw new ValidationException("A date and time is required.");
+        if (status != Status.SCHEDULED) throw new ValidationException("Only a scheduled fixture can be moved.");
+        this.dateTime = dateTime;
+    }
+
+    /** A cancelled fixture keeps its record but can no longer get a result, officials or tickets. */
+    public void cancel() {
+        if (status != Status.SCHEDULED) throw new ValidationException("Only a scheduled fixture can be cancelled.");
+        status = Status.CANCELLED;
+    }
+
     /** Low-level add; FootballLeague.assignOfficial performs the availability and conflict checks. */
     public void addOfficial(MatchOfficial official) {
         if (official == null) throw new ValidationException("Match official is required.");
-        if (status == Status.COMPLETED) throw new ValidationException("Cannot assign officials to a completed fixture.");
+        if (status != Status.SCHEDULED) throw new ValidationException("Officials can only be assigned to a scheduled fixture.");
         if (!hasOfficial(official.getId())) officials.add(official);
+    }
+
+    /** Returns false if that official was not assigned. Completed and cancelled fixtures keep their officials. */
+    public boolean removeOfficial(String officialId) {
+        if (status != Status.SCHEDULED) throw new ValidationException("Officials can only be changed on a scheduled fixture.");
+        for (MatchOfficial o : officials) {
+            if (o.getId().equals(officialId)) {
+                officials.remove(o);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Restore a historical assignment from storage, including assignments on completed fixtures. */
@@ -84,8 +119,18 @@ public class Fixture implements FixtureInfo {
             throw new ValidationException("Result belongs to a different fixture.");
         if (status == Status.COMPLETED)
             throw new ValidationException("Fixture " + fixtureId + " already has a result.");
+        if (status == Status.CANCELLED)
+            throw new ValidationException("Fixture " + fixtureId + " was cancelled.");
         this.result = result;
         this.status = Status.COMPLETED;
+    }
+
+    /** Replaces the result of a completed fixture, for example to fix a wrongly entered score. */
+    public void correctResult(MatchResult result) {
+        if (status != Status.COMPLETED) throw new ValidationException("Only a completed fixture has a result to correct.");
+        if (result == null || !fixtureId.equals(result.getFixtureId()))
+            throw new ValidationException("A valid result for this fixture is required.");
+        this.result = result;
     }
 
     @Override

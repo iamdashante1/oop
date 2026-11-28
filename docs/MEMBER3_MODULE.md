@@ -22,15 +22,17 @@ Member 3 is responsible for the venue and match-scheduling domain: `Stadium`, `F
 ### Fixtures
 1. Schedule a fixture using existing teams and stadium.
 2. Reject identical home/away teams, unregistered teams/stadiums, and teams that are not ACTIVE.
-3. Reject a team or stadium already used by another fixture at the same date/time.
+3. Reject a team, stadium or official already used by another fixture whose time slot overlaps (every match counts as `Fixture.DURATION_MINUTES` = 120 minutes). Cancelled fixtures are ignored.
 4. Search by fixture ID, team name, stadium name or status; list fixtures in date/time order.
-5. Link a valid result to the fixture and prevent a second result.
+5. Link a valid result to the fixture and prevent a second result. The commissioner can correct a wrong score (logged).
+6. Reschedule a scheduled fixture (the old time is kept if the new one clashes) or cancel it with a reason. Cancelling also refunds its tickets.
 
 ### Match officials
 1. Register officials with a unique person ID and non-empty rank/role.
 2. Search by ID, name or rank; list all registered officials.
-3. Update availability.
-4. Assign an official only to a scheduled fixture when the official is available and not already assigned to a fixture at the same date/time.
+3. Update availability (menu: *Set official availability*).
+4. Assign an official only to a scheduled fixture when the official is available and not already assigned to an overlapping fixture.
+5. Unassign an official from a scheduled fixture.
 
 ## Integration contracts
 
@@ -46,7 +48,7 @@ The project targets Java 17. From the repository root:
 
 ```bash
 mkdir -p out
-javac -d out $(find src/main/java src/test/java -name '*.java')
+javac -d out -encoding UTF-8 $(find src/main src/test -name '*.java')
 java -cp out kpfl.IntegrationTests
 java -cp out kpfl.Member1Tests
 ```
